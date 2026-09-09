@@ -158,14 +158,14 @@ describe('parseVueTemplate — 插值与指令表达式里的字符串字面量'
     ])
   })
 
-  it('reports string literals inside event handlers and complex bindings as literal', () => {
+  it('reports string literals inside event handlers and complex bindings with script kinds', () => {
     const src = `<template>
   <van-button :title="isVip ? '会员' : '游客'" @click="go('去哪')">按钮</van-button>
 </template>`
     expect(pick(parseVueTemplate(src, ctx))).toEqual([
       { value: '会员', kind: 'literal' },
       { value: '游客', kind: 'literal' },
-      { value: '去哪', kind: 'literal' },
+      { value: '去哪', kind: 'call-arg' },
       { value: '按钮', kind: 'template-text' },
     ])
   })

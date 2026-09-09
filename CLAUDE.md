@@ -45,17 +45,17 @@ i18n-triage 把字符串按 **AST 位置 + 调用点上下文** 分成四类，�
 
 ## 技术选型（已定，不要改）
 
-| 用途                   | 选型                                                                                                                                                                                         |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.vue` 拆块            | `@vue/compiler-sfc` 的 `parse()`                                                                                                                                                             |
-| template → AST         | `@vue/compiler-dom` 的原始 parse AST。实际取 `descriptor.template.ast`（compiler-sfc 已调用 compiler-dom 解析，且位置是整文件坐标），不再二次 `compile()`，理由见 `docs/vue-template-ast.md` |
-| 模板表达式里的字符串   | TypeScript parser（`ts-morph` 导出的 `ts`），见 `parsers/expression.ts`                                                                                                                      |
-| script / `.ts` / `.js` | `ts-morph`（`createSourceFile` 从字符串创建，不用 `addSourceFileAtPath`）                                                                                                                    |
-| 测试                   | vitest                                                                                                                                                                                       |
-| 包管理 / 任务编排      | pnpm workspace + Turborepo                                                                                                                                                                   |
-| 构建                   | tsdown（ESM）                                                                                                                                                                                |
-| 语言                   | TypeScript 严格模式                                                                                                                                                                          |
-| 终端着色               | picocolors（不用 chalk 5）                                                                                                                                                                   |
+| 用途                   | 选型                                                                                                                                                                                                                                |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.vue` 拆块            | `@vue/compiler-sfc` 的 `parse()`                                                                                                                                                                                                    |
+| template → AST         | `@vue/compiler-dom` 的原始 parse AST。实际取 `descriptor.template.ast`（compiler-sfc 已调用 compiler-dom 解析，且位置是整文件坐标），不再二次 `compile()`，理由见 `docs/vue-template-ast.md`                                        |
+| 模板表达式里的字符串   | 含中文的 `{{ }}` / 指令表达式：遮罩整文件只留表达式后交给 `parseScript`，kind / `calleeName` 与 script 完全一致（`{{ t('x') }}` 是 `call-arg` + `t`）；单字面量 `:attr="'x'"` 仍判 `template-attr`，用 `parsers/expression.ts` 识别 |
+| script / `.ts` / `.js` | `ts-morph`（`createSourceFile` 从字符串创建，不用 `addSourceFileAtPath`）                                                                                                                                                           |
+| 测试                   | vitest                                                                                                                                                                                                                              |
+| 包管理 / 任务编排      | pnpm workspace + Turborepo                                                                                                                                                                                                          |
+| 构建                   | tsdown（ESM）                                                                                                                                                                                                                       |
+| 语言                   | TypeScript 严格模式                                                                                                                                                                                                                 |
+| 终端着色               | picocolors（不用 chalk 5）                                                                                                                                                                                                          |
 
 **不要用 tree-sitter**：多语言支持对本项目无用，且引入二进制依赖。
 

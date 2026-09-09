@@ -54,6 +54,22 @@
 - 统一指向**AST 节点起点**：属性值 → 开头引号；JS 字符串字面量 → 开头引号/反引号；文本节点 → 第一个非空白字符（节点起点常是换行符，没意义）。
 - 行列不信任 Vue 给的 `line` / `column` 再做加减，而是用 `utils/line-index.ts` 从整文件 `offset` 反查，避免多段偏移叠加出错；测试里再和 Vue 自带的行列交叉核对。
 
+## 表达式的处理方式（Day 4 起改为交给 script 解析器）
+
+上表 INTERPOLATION / DIRECTIVE 两行里「用 TypeScript parser 取字符串字面量 → `literal`」是 Day 2 的做法，
+只能得到扁平的 `literal`，分不清 `{{ t('已封盘') }}`（已接入）和 `@click="showToast('已封盘')"`（未接入）。
+现在的做法：
+
+1. 表达式内容不含中文 → 直接跳过（绝大多数表达式在此止步）。
+2. `v-bind` 且 `arg` 静态、整个表达式就是一个字符串字面量（`:placeholder="'请输入'"`）→ `template-attr`，`attrName = arg`（仍由 `parsers/expression.ts` 判断）。
+3. 其余：把整文件中表达式范围 `[exp.loc.start.offset, exp.loc.end.offset)` 以外的字符全部遮罩成空格（保留 `\n` / `\r`），
+   交给 `parseScript(masked, ctx, { dialect: 'ts' })`。得到的 kind / `calleeName` / `siblingChineseCount` 与 script 完全一致，位置天然是整文件坐标。
+   - `{{ }}` 与 `:bind` 是表达式，遮罩后在紧邻的空格槽位上补一对 `( )`，避免 `{ a: 'x' }` 被当成语句块。括号只写到非换行的槽位上，不会改变行号。
+   - `v-on` 允许内联语句（`count++; go('去哪')`），不包括号。
+
+实测结果：`{{ t('已封盘') }}` → `call-arg` / `t`；`@click="showToast('已封盘')"` → `call-arg` / `showToast`；
+`:style="{ content: '中文' }"` → `object-value`；`:class="{ '中文类名': ok }"` → `object-key`；`{{ ok ? '成功' : '失败' }}` → `literal`。
+
 ## `descriptor` 其他块（供 Day 3 参考）
 
 | 块                                             | `loc.start.offset` 含义                                                       | 用途                                                                |

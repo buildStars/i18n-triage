@@ -19,6 +19,8 @@ import type { ScriptDialect } from './script'
 import { parseScript } from './script'
 
 interface WalkState {
+  source: string
+  ctx: FileContext
   file: string
   lines: LineIndex
   out: StringNode[]
@@ -79,9 +81,48 @@ function collectTemplateNodes(
 ): StringNode[] {
   const ast = descriptor.template?.ast
   if (!ast) return []
-  const state: WalkState = { file: ctx.relativePath, lines: createLineIndex(source), out: [] }
+  const state: WalkState = {
+    source,
+    ctx,
+    file: ctx.relativePath,
+    lines: createLineIndex(source),
+    out: [],
+  }
   visitChildren(ast.children, state)
   return state.out
+}
+
+/**
+ * 把模板里的一段 JS 表达式交给 script 解析器：遮罩整文件其余部分，只留 [start, end)，
+ * 这样拿到的 kind / calleeName / siblingChineseCount 与 script 完全一致，位置也天然是整文件坐标。
+ *
+ * `wrapInParens`：`{{ }}` 与 `:bind` 是表达式，包一层括号避免 `{ a: 'x' }` 被当成语句块；
+ * `v-on` 允许内联语句（`count++; go()`），不能包。括号只写到被遮罩成空格的槽位上，绝不动换行。
+ */
+function parseTemplateExpression(
+  state: WalkState,
+  start: number,
+  end: number,
+  wrapInParens: boolean,
+): StringNode[] {
+  let masked = maskOutside(state.source, start, end)
+  if (wrapInParens) {
+    const open = findBlankSlot(masked, start - 1, -1)
+    const close = findBlankSlot(masked, end, 1)
+    if (open !== -1 && close !== -1) {
+      masked = `${masked.slice(0, open)}(${masked.slice(open + 1, close)})${masked.slice(close + 1)}`
+    }
+  }
+  return parseScript(masked, state.ctx, { dialect: 'ts' })
+}
+
+/** 从 from 开始按 step 方向找第一个不是换行的（已遮罩的）位置；找不到返回 -1 */
+function findBlankSlot(masked: string, from: number, step: 1 | -1): number {
+  for (let i = from; i >= 0 && i < masked.length; i += step) {
+    const ch = masked[i]
+    if (ch !== '\n' && ch !== '\r') return i
+  }
+  return -1
 }
 
 function makeLoc(state: WalkState, offset: number): SourceLocation {
@@ -150,43 +191,41 @@ function visitAttribute(node: AttributeNode, state: WalkState): void {
 function visitInterpolation(node: InterpolationNode, state: WalkState): void {
   const exp = node.content
   if (exp.type !== NodeTypes.SIMPLE_EXPRESSION) return
-  for (const lit of extractStringLiterals(exp.content)) {
-    if (!containsChinese(lit.value)) continue
-    state.out.push({
-      value: lit.value,
-      kind: 'literal',
-      loc: makeLoc(state, exp.loc.start.offset + lit.start),
-    })
-  }
+  if (!containsChinese(exp.content)) return
+  state.out.push(...parseTemplateExpression(state, exp.loc.start.offset, exp.loc.end.offset, true))
 }
 
 function visitDirective(node: DirectiveNode, state: WalkState): void {
   const exp = node.exp
   if (!exp || exp.type !== NodeTypes.SIMPLE_EXPRESSION) return
-
-  const literals = extractStringLiterals(exp.content)
-  if (literals.length === 0) return
+  if (!containsChinese(exp.content)) return
 
   // `:placeholder="'请输入'"`：整个表达式就是一个字符串字面量，等价于静态属性
-  const first = literals[0]
-  const leading = exp.content.length - exp.content.trimStart().length
-  const isWholeLiteral =
-    literals.length === 1 &&
-    first !== undefined &&
-    first.start === leading &&
-    first.end - first.start === exp.content.trim().length
   const staticArg =
     node.name === 'bind' && node.arg?.type === NodeTypes.SIMPLE_EXPRESSION && node.arg.isStatic
       ? node.arg.content
       : undefined
-
-  for (const lit of literals) {
-    if (!containsChinese(lit.value)) continue
-    const loc = makeLoc(state, exp.loc.start.offset + lit.start)
-    if (isWholeLiteral && staticArg !== undefined) {
-      state.out.push({ value: lit.value, kind: 'template-attr', attrName: staticArg, loc })
-    } else {
-      state.out.push({ value: lit.value, kind: 'literal', loc })
+  if (staticArg !== undefined) {
+    const literals = extractStringLiterals(exp.content)
+    const first = literals[0]
+    const leading = exp.content.length - exp.content.trimStart().length
+    if (
+      literals.length === 1 &&
+      first !== undefined &&
+      first.start === leading &&
+      first.end - first.start === exp.content.trim().length
+    ) {
+      state.out.push({
+        value: first.value,
+        kind: 'template-attr',
+        attrName: staticArg,
+        loc: makeLoc(state, exp.loc.start.offset + first.start),
+      })
+      return
     }
   }
+
+  // 其余表达式交给 script 解析器；v-on 可能是内联语句，不包括号
+  const wrap = node.name !== 'on'
+  state.out.push(...parseTemplateExpression(state, exp.loc.start.offset, exp.loc.end.offset, wrap))
 }
