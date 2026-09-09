@@ -69,7 +69,7 @@ function dialectFromLang(lang: SFCScriptBlock['lang']): ScriptDialect {
 }
 
 /** 把 [start, end) 之外的字符全部替换成空格，保留换行，使长度与行结构不变 */
-function maskOutside(source: string, start: number, end: number): string {
+export function maskOutside(source: string, start: number, end: number): string {
   const blank = (s: string): string => s.replace(/[^\r\n]/g, ' ')
   return blank(source.slice(0, start)) + source.slice(start, end) + blank(source.slice(end))
 }

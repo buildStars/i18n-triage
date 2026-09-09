@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0 (unreleased)
+
+- `i18n-triage locales [paths]`: locale completeness (missing / extra / empty per target locale), dead keys, keys possibly used via a dynamic-call prefix or a matching string literal (route meta, menu configs), and undefined keys with locations; JSON and TS/JS locale modules, flat and `<locale>/<namespace>` layouts; `--source`, `--locale-files`, `--format text|json`, exit 1 as a CI gate; config block `locales`
+- core: `findKeyUsages`, `auditLocales`, `compareLocales`, `flattenMessages`
+
 ## 0.2.0 (2026-09-09)
 
 - `--fix` (`--dry-run`, `--include-unsure`, `--locale-file`): rewrites rule-matched A strings into `$t()` / `t()` calls and writes them to a flat locale JSON (existing entries preserved, keys reused, second run is a no-op); adds `useI18n` to `<script setup>` when missing; skips concatenations, template-literal chunks, plain scripts and JSX with a reason; config block `fix` (`keyStyle` text | hash, `templateFn`, `scriptFn`, `fixPlainScripts`, `ensureUseI18n`, `includeUnsure`, `localeFile`)

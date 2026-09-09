@@ -36,6 +36,33 @@ export interface FixConfig {
 
 export type ResolvedFixConfig = Required<FixConfig>
 
+/** `i18n-triage locales` 的选项（配置文件 `locales` 字段） */
+export interface LocalesConfig {
+  /** 语言包文件 glob；文件名或上级目录名必须是语言代码（zh-CN.json、zh-CN/common.json） */
+  files?: string[]
+  /** 源语言，默认 zh-CN（找不到时依次尝试 zh_CN / zh-Hans / zh，再退回第一个） */
+  source?: string
+  /** 识别为 i18n 调用的被调用者模式，默认与剔除 t() 的列表相同 */
+  callees?: string[]
+  /** 模板里直接写 key 的属性，默认 keypath / path */
+  keyAttrs?: string[]
+}
+
+export type ResolvedLocalesConfig = Required<LocalesConfig>
+
+export const DEFAULT_LOCALES_CONFIG: ResolvedLocalesConfig = {
+  files: [
+    '**/locales/**/*.{json,ts,js,mjs,cjs}',
+    '**/locale/**/*.{json,ts,js,mjs,cjs}',
+    '**/lang/**/*.{json,ts,js,mjs,cjs}',
+    '**/langs/**/*.{json,ts,js,mjs,cjs}',
+    '**/i18n/**/*.{json,ts,js,mjs,cjs}',
+  ],
+  source: 'zh-CN',
+  callees: [],
+  keyAttrs: ['keypath', 'path'],
+}
+
 export const DEFAULT_FIX_CONFIG: ResolvedFixConfig = {
   keyStyle: 'text',
   templateFn: '$t',
@@ -76,6 +103,8 @@ export interface I18nTriageConfig {
   format?: OutputFormat
   /** `--fix` 的选项 */
   fix?: FixConfig
+  /** `i18n-triage locales` 的选项 */
+  locales?: LocalesConfig
 }
 
 export interface ResolvedConfig {
@@ -88,6 +117,7 @@ export interface ResolvedConfig {
   dictSiblingThreshold: number
   maxFileSize: number
   fix: ResolvedFixConfig
+  locales: ResolvedLocalesConfig
 }
 
 export const DEFAULT_INCLUDE: readonly string[] = ['**/*.{vue,ts,js,tsx,jsx}']
@@ -201,6 +231,7 @@ export function resolveConfig(user: I18nTriageConfig = {}): ResolvedConfig {
     dictSiblingThreshold: user.dictSiblingThreshold ?? DEFAULT_DICT_SIBLING_THRESHOLD,
     maxFileSize: user.maxFileSize ?? DEFAULT_MAX_FILE_SIZE,
     fix: { ...DEFAULT_FIX_CONFIG, ...stripUndefined(user.fix ?? {}) },
+    locales: { ...DEFAULT_LOCALES_CONFIG, ...stripUndefined(user.locales ?? {}) },
   }
 }
 

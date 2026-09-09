@@ -1,0 +1,16 @@
+{
+  "common": {
+    "ok": "确定",
+    "cancel": "取消",
+    "unused": "从未使用"
+  },
+  "order": {
+    "title": "订单",
+    "status": {
+      "paid": "已支付",
+      "pending": "待支付"
+    }
+  },
+  "hello": "你好",
+  "typo": "拼写"
+}

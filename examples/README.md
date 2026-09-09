@@ -1,5 +1,14 @@
 # examples
 
+## locales-demo
+
+`i18n-triage locales` 的 fixture：两种语言包布局（`zh-CN.json` 与 `zh-CN/menu.json`）、JSON 与 TS 模块、应被跳过的 `index.ts`、`Home.vue` 里的静态 / 动态 / 未定义引用、`router.ts` 里存在 `meta.title` 的 key。
+期望：源语言 9 个 key；en-US 缺 3 多 1 空 1；死 key 2（`common.unused`、`typo`），`order.status.pending` 可能被动态使用，`common.cancel` 可能通过字面量引用，`typoo` 未定义。
+
+```bash
+pnpm triage locales examples/locales-demo
+```
+
 ## demo
 
 一个故意混入四类情况的迷你 Vue 项目，每个中文都在源码里用注释标明了期望分类：

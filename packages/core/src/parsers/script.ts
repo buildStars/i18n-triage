@@ -1,5 +1,5 @@
 import { Node, Project, SyntaxKind, ts } from 'ts-morph'
-import type { ObjectLiteralExpression } from 'ts-morph'
+import type { ObjectLiteralExpression, SourceFile } from 'ts-morph'
 
 import type { FileContext, SourceLocation, StringKind, StringNode } from '../types'
 import { containsChinese } from '../utils/chinese'
@@ -357,8 +357,29 @@ function jsxAttrName(expr: Node): string | undefined {
 // calleeName
 // ---------------------------------------------------------------------------
 
+/**
+ * 在共享的 in-memory Project 里临时创建一个源文件，跑完回调后移除。
+ * 供其他需要 ts-morph 遍历的模块（如 locales/usages）复用，避免各自维护 Project。
+ */
+export function withTsMorphSourceFile<T>(
+  source: string,
+  dialect: ScriptDialect,
+  fn: (sourceFile: SourceFile) => T,
+): T {
+  const project = getProject()
+  const sourceFile = project.createSourceFile(`__i18n_triage_tmp__.${dialect}`, source, {
+    overwrite: true,
+    scriptKind: SCRIPT_KIND[dialect],
+  })
+  try {
+    return fn(sourceFile)
+  } finally {
+    project.removeSourceFile(sourceFile)
+  }
+}
+
 /** 被调用者的点号全名：showToast / console.error / this.$message.success / api.list.fetch / foo() */
-function getCalleeName(callee: Node): string | undefined {
+export function getCalleeName(callee: Node): string | undefined {
   if (Node.isIdentifier(callee)) return callee.getText()
   if (Node.isThisExpression(callee)) return 'this'
   if (Node.isSuperExpression(callee)) return 'super'

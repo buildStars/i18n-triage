@@ -5,12 +5,15 @@ export type {
   FixConfig,
   I18nTriageConfig,
   LoadedConfig,
+  LocalesConfig,
   OutputFormat,
   ResolvedConfig,
   ResolvedFixConfig,
+  ResolvedLocalesConfig,
 } from './config'
 export {
   DEFAULT_FIX_CONFIG,
+  DEFAULT_LOCALES_CONFIG,
   DEFAULT_IGNORE,
   DEFAULT_INCLUDE,
   defineConfig,
@@ -24,3 +27,11 @@ export type { ScanOptions } from './scan'
 export { scan } from './scan'
 export type { FixFileDetail, FixRunOptions, FixSummary } from './fix'
 export { formatFixSummary, runFix } from './fix'
+export type { LocaleFileInfo, LocalesResult, LocalesRunOptions } from './locales'
+export {
+  detectLocaleFile,
+  formatLocalesJson,
+  formatLocalesText,
+  localesExitCode,
+  runLocales,
+} from './locales'

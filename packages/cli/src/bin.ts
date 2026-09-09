@@ -9,6 +9,7 @@ import { cac } from 'cac'
 import type { I18nTriageConfig, OutputFormat } from './config'
 import { loadConfigFile, parseOnly, resolveConfig } from './config'
 import { formatFixSummary, runFix } from './fix'
+import { formatLocalesJson, formatLocalesText, localesExitCode, runLocales } from './locales'
 import { scan } from './scan'
 
 /** 构建时由 tsdown 的 define 注入 package.json 的 version；tsx 直接跑源码时没有这个常量 */
@@ -104,7 +105,80 @@ async function run(paths: string[], options: CliOptions): Promise<number> {
   return report.errors.length > 0 ? 1 : 0
 }
 
+interface LocalesCliOptions {
+  format?: string
+  source?: string
+  localeFiles?: string
+  config?: string
+  out?: string
+  color?: boolean
+}
+
+async function runLocalesCommand(paths: string[], options: LocalesCliOptions): Promise<number> {
+  const cwd = process.cwd()
+  const loaded = await loadConfigFile(cwd, options.config, await directoryTargets(cwd, paths))
+  const localesOverrides = {
+    ...(options.source !== undefined ? { source: options.source } : {}),
+    ...(options.localeFiles !== undefined
+      ? {
+          files: options.localeFiles
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean),
+        }
+      : {}),
+  }
+  const config = resolveConfig({
+    ...loaded?.config,
+    locales: { ...loaded?.config?.locales, ...localesOverrides },
+  })
+  const format = options.format ?? 'text'
+  if (format !== 'text' && format !== 'json') {
+    throw new Error(`未知输出格式 "${format}"，locales 只接受 text | json`)
+  }
+
+  const result = await runLocales(paths, { cwd, config })
+  const useColor =
+    options.out === undefined &&
+    options.color !== false &&
+    process.stdout.isTTY === true &&
+    process.env.NO_COLOR === undefined
+  const output = format === 'json' ? formatLocalesJson(result) : formatLocalesText(result, useColor)
+
+  if (options.out !== undefined) {
+    const outPath = path.resolve(cwd, options.out)
+    await mkdir(path.dirname(outPath), { recursive: true })
+    await writeFile(outPath, output, 'utf8')
+    process.stderr.write(`i18n-triage locales: 报告已写入 ${outPath}\n`)
+  } else {
+    process.stdout.write(output)
+  }
+  return localesExitCode(result)
+}
+
 const cli = cac('i18n-triage')
+
+cli
+  .command('locales [...paths]', '校验语言包完整度，找出死 key 与代码里未定义的 key')
+  .option('--format <format>', '输出格式：text | json（默认 text）')
+  .option('--source <locale>', '源语言（默认 zh-CN）')
+  .option(
+    '--locale-files <globs>',
+    '语言包 glob，逗号分隔（默认 **/locales/**、**/lang(s)/**、**/i18n/**）',
+  )
+  .option('--config <path>', '配置文件路径')
+  .option('--out <path>', '把报告写入文件')
+  .option('--no-color', '关闭终端颜色')
+  .example('i18n-triage locales src')
+  .example('i18n-triage locales src --source en --format json')
+  .action(async (paths: string[], options: LocalesCliOptions) => {
+    try {
+      process.exitCode = await runLocalesCommand(paths, options)
+    } catch (err) {
+      process.stderr.write(`i18n-triage: ${err instanceof Error ? err.message : String(err)}\n`)
+      process.exitCode = 2
+    }
+  })
 
 cli
   .command('[...paths]', '扫描目录 / 文件里的硬编码中文，按 A/B/C/D 分类，只把必翻译文案推到你面前')

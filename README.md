@@ -160,6 +160,25 @@ fix: {
 }
 ```
 
+### `locales`: completeness, dead keys, undefined keys
+
+```bash
+npx i18n-triage locales src                       # text report, exit 1 when incomplete
+npx i18n-triage locales src --source en --format json
+```
+
+Finds locale files under `**/locales/**`, `**/locale/**`, `**/lang(s)/**`, `**/i18n/**` (JSON, or TS/JS modules with a default export) whose file name or parent directory is a locale code — both `zh-CN.json` and `zh-CN/common.json` layouts work, the latter namespaced by file name — then audits with the source locale (default `zh-CN`) as the baseline:
+
+| Check                   | Meaning                                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------ |
+| missing / extra / empty | per target locale, against the source key set                                                                |
+| dead keys               | defined in the source but never referenced in code                                                           |
+| maybe used              | not referenced statically, but matching the static prefix of a dynamic call such as ``t(`order.${s}`)``      |
+| referenced as literal   | not referenced statically, but some string literal in code equals the key (route `meta.title`, menu configs) |
+| undefined keys          | `t('typoo')` in code with no such key in the source locale, with file and line                               |
+
+References are collected with the same AST machinery as the scanner — `t()` / `$t()` / `i18n.global.t()` first arguments in scripts and template expressions, `<i18n-t keypath>`, `v-t="'key'"` — so comments never count. Exit code is 1 when a locale has missing or empty values, an undefined key is used, or the source locale cannot be found. Config: `locales: { files, source, callees, keyAttrs }`.
+
 ### GitHub Action
 
 `action.yml` at the repository root is a composite action: it runs the CLI with `--format sarif` and uploads the result to GitHub Code Scanning, so every hard-coded string shows up as an inline annotation on the pull request.

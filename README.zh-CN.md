@@ -160,6 +160,25 @@ fix: {
 }
 ```
 
+### `locales`：完整度、死 key、未定义 key
+
+```bash
+npx i18n-triage locales src                       # 文本报告，不完整时退出码 1
+npx i18n-triage locales src --source en --format json
+```
+
+在 `**/locales/**`、`**/locale/**`、`**/lang(s)/**`、`**/i18n/**` 下找语言包（JSON，或默认导出对象的 TS/JS 模块），文件名或上级目录名是语言代码的才算——`zh-CN.json` 与 `zh-CN/common.json` 两种布局都支持，后者按文件名做命名空间——然后以源语言（默认 `zh-CN`）为基准审计：
+
+| 检查项             | 含义                                                                                      |
+| ------------------ | ----------------------------------------------------------------------------------------- |
+| 缺失 / 多余 / 空值 | 每个目标语言相对源语言 key 集合的差异                                                     |
+| 死 key             | 源语言里定义、代码从未引用                                                                |
+| 可能被动态使用     | 没有静态引用，但匹配某个动态调用的静态前缀，如 ``t(`order.${s}`)``                        |
+| 可能通过字面量引用 | 没有静态引用，但代码里有字符串字面量恰好等于它（路由 `meta.title`、菜单配置先存后 `t()`） |
+| 未定义 key         | 代码里 `t('typoo')`，源语言里却没有这个 key，给出文件与行号                               |
+
+引用采集复用扫描器的 AST 机制——脚本与模板表达式里 `t()` / `$t()` / `i18n.global.t()` 的第一个实参、`<i18n-t keypath>`、`v-t="'key'"`——所以注释里的永远不算。有语言缺失或空值、用到未定义 key、找不到源语言时退出码 1。配置：`locales: { files, source, callees, keyAttrs }`。
+
 ### GitHub Action
 
 仓库根目录的 `action.yml` 是一个 composite action：用 `--format sarif` 跑 CLI，再把结果上传到 GitHub Code Scanning，于是每条硬编码文案都会变成 PR 里的行内注释。

@@ -1,0 +1,15 @@
+{
+  "common": {
+    "ok": "OK",
+    "cancel": ""
+  },
+  "order": {
+    "title": "Order",
+    "status": {
+      "paid": "Paid",
+      "pending": "Pending"
+    }
+  },
+  "hello": "Hello",
+  "onlyInEn": "extra"
+}

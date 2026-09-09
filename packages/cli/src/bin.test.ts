@@ -77,6 +77,15 @@ describe('bin.ts — 端到端', () => {
     expect(r.stderr).toContain('X')
   })
 
+  it('runs the locales subcommand and exits 1 on an incomplete locale set', SLOW, () => {
+    const localesDemo = path.resolve(here, '../../../examples/locales-demo')
+    const r = run(['locales', localesDemo])
+    expect(r.code).toBe(1)
+    expect(r.stdout).toContain('源语言 zh-CN（9 个 key）')
+    expect(r.stdout).toContain('━━ 死 key（2）━━')
+    expect(r.stdout).toContain('typoo')
+  })
+
   it('reports the version', SLOW, () => {
     const r = run(['--version'])
     expect(r.code).toBe(0)

@@ -178,6 +178,14 @@ kind 判定的关键语义（详表见 `docs/ts-morph-kinds.md`、`docs/vue-temp
 - 幂等：改写后的 `$t()` / `t()` 实参被 `excludeI18nCalls` 剔除，第二遍 `replaced === 0`。`plan.test.ts` 还用 compiler-sfc 验证输出可解析；RuoYi 全量实测 97 个 `.vue` 改写后 0 编译错误。
 - 语言包：扁平 JSON，读取时把嵌套结构压平成 `a.b.c` 供复用，写入时保留原结构、新 key 追加顶层。路径默认 `src/locales/zh-CN.json`，相对第一个目录目标（没有则 cwd）。
 
+## `locales` 子命令约定（已实现）
+
+- core `src/locales/`：`flattenMessages`（嵌套 → `a.b.c`，数组按下标，只留字符串叶子）、`compareLocales`（missing / extra / empty / translated）、`findKeyUsages`（ts-morph 走 CallExpression，不依赖中文过滤；`t()` 类第一个实参为字面量 → static，模板字符串 → dynamic 带前缀，其他 → dynamic 无前缀；`<i18n-t keypath>` 与 `v-t="'key'"` 也算 static；同时收集所有字符串字面量 `literals`）、`auditLocales`（dead / maybeUsed（前缀）/ referencedAsLiteral / undefined / dynamicWithoutPrefix）。判定顺序：static 引用 > 动态前缀 > 字面量相等 > 死。
+- cli `src/locales.ts`：`detectLocaleFile` 只认文件名或上级目录名是语言代码（`/^[a-z]{2}(?:[-_][A-Za-z]{2,4})?$/`）的文件，`index.ts` 之类跳过；`.json` 直接读，其余用 jiti 取默认导出；源语言默认 `zh-CN`，找不到时依次 `zh_CN` / `zh-cn` / `zh-Hans` / `zh`，用户显式指定的不回退。退出码：缺失、空值、未定义 key、错误 → 1。
+- 脚本层为此导出了 `withTsMorphSourceFile`、`getCalleeName`（script.ts）与 `maskOutside`（vue-sfc.ts），其他需要 ts-morph 遍历的模块复用它们，不要再建 Project。
+- fixture：`examples/locales-demo`（zh-CN.json + zh-CN/menu.json、en-US.json、ja/menu.json、zh-TW.ts、index.ts 应被跳过、router.ts 的 meta.title 演示字面量引用），期望值在 `cli/src/locales.test.ts`。
+- 真实项目提醒（element-plus-admin）：路由 `meta.title` / 图表月份这类先存 key 再动态 `t()` 的写法很常见，没有字面量启发式会把它们全判成死 key；即便有，报告仍应带「N 处动态调用没有静态前缀」的提示。
+
 ## 测试规范
 
 - **每条规则必须有 fixture 测试**，并有一组专门的**优先级冲突测试**（同时满足两条规则的节点，断言最终分类）。
