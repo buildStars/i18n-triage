@@ -8,12 +8,15 @@ import type {
   TextNode,
 } from '@vue/compiler-dom'
 import { parse as parseSfc } from '@vue/compiler-sfc'
+import type { SFCDescriptor, SFCScriptBlock } from '@vue/compiler-sfc'
 
 import type { FileContext, SourceLocation, StringNode } from '../types'
 import { containsChinese } from '../utils/chinese'
 import type { LineIndex } from '../utils/line-index'
 import { createLineIndex } from '../utils/line-index'
 import { extractStringLiterals } from './expression'
+import type { ScriptDialect } from './script'
+import { parseScript } from './script'
 
 interface WalkState {
   file: string
@@ -30,9 +33,52 @@ interface WalkState {
  */
 export function parseVueTemplate(source: string, ctx: FileContext): StringNode[] {
   const { descriptor } = parseSfc(source, { filename: ctx.relativePath, sourceMap: false })
+  return collectTemplateNodes(descriptor, source, ctx)
+}
+
+/**
+ * 解析整个 .vue：`<template>` + 所有 `<script>` / `<script setup>` 块，按 offset 排序。
+ * script 块通过「遮罩整文件其余部分」交给 parseScript，位置天然是整文件坐标。
+ */
+export function parseVueSfc(source: string, ctx: FileContext): StringNode[] {
+  const { descriptor } = parseSfc(source, { filename: ctx.relativePath, sourceMap: false })
+  const nodes = collectTemplateNodes(descriptor, source, ctx)
+
+  for (const block of [descriptor.script, descriptor.scriptSetup]) {
+    if (!block || block.src !== undefined) continue // 外链 <script src> 没有内容可扫
+    const masked = maskOutside(source, block.loc.start.offset, block.loc.end.offset)
+    nodes.push(...parseScript(masked, ctx, { dialect: dialectFromLang(block.lang) }))
+  }
+
+  return nodes.sort((a, b) => a.loc.offset - b.loc.offset)
+}
+
+function dialectFromLang(lang: SFCScriptBlock['lang']): ScriptDialect {
+  switch (lang) {
+    case 'ts':
+      return 'ts'
+    case 'tsx':
+      return 'tsx'
+    case 'jsx':
+      return 'jsx'
+    default:
+      return 'js'
+  }
+}
+
+/** 把 [start, end) 之外的字符全部替换成空格，保留换行，使长度与行结构不变 */
+function maskOutside(source: string, start: number, end: number): string {
+  const blank = (s: string): string => s.replace(/[^\r\n]/g, ' ')
+  return blank(source.slice(0, start)) + source.slice(start, end) + blank(source.slice(end))
+}
+
+function collectTemplateNodes(
+  descriptor: SFCDescriptor,
+  source: string,
+  ctx: FileContext,
+): StringNode[] {
   const ast = descriptor.template?.ast
   if (!ast) return []
-
   const state: WalkState = { file: ctx.relativePath, lines: createLineIndex(source), out: [] }
   visitChildren(ast.children, state)
   return state.out

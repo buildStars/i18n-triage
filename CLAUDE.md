@@ -105,6 +105,25 @@ i18n-triage/
 - **中文检测正则统一用 `/[一-鿿㐀-䶿]/`**，唯一定义在 `packages/core/src/utils/chinese.ts`（导出 `CHINESE_RE` 与 `containsChinese()`），**禁止在其他地方重复写**。
 - 格式：prettier，无分号、单引号、宽度 100。
 
+## 解析器约定（Day 2–3 已定，规则层依赖这些语义）
+
+对外 API（全部纯函数，见 `packages/core/src/parsers/index.ts`）：
+
+- `parseSource(source, ctx)` 按后缀分派：`.vue` → `parseVueSfc`，其余 → `parseScript`。CLI 只调这一个。
+- `parseVueSfc` = template 节点 + 每个 `<script>` / `<script setup>` 块，按 offset 排序。script 块的做法是**把整文件里块以外的字符遮罩成空格（保留换行）再整段解析**，所以位置天然是整文件坐标，没有任何偏移加减。
+- `parseScript(source, ctx, { dialect? })`：`.ts` / `.tsx` / `.js` / `.jsx` 按后缀选方言，`.vue` 按 `<script lang>`。
+
+kind 判定的关键语义（详表见 `docs/ts-morph-kinds.md`、`docs/vue-template-ast.md`）：
+
+- **透明层**：括号、`as` / `satisfies` / `!`、模板字符串静态段、三元分支、`+` / `??` / `||` 拼接都不改变字面量的位置语义。`showToast(ok ? '成功' : '失败')` 两个都是 `call-arg`。比较运算符（`===` 等）不透明，`status === '已封盘'` 是 `literal`。
+- **`calleeName` 取最近的调用**：`showToast(t('已封盘'))` 里是 `t`。回调函数体是边界：`list.map(x => x.label + '元')` 的 `'元'` 不属于 `map`。
+- **非 call-arg 也可能带 `calleeName`**：`showToast({ message: '已封盘' })` 的 `object-value` 带 `calleeName: 'showToast'`（沿对象 / 数组 / 属性向上找到把它当实参的调用）。A / B 规则应同时检查 `call-arg` 和带 `calleeName` 的 `object-value`。
+- **`siblingChineseCount` 对数组元素对象按整个数组合计**：`[{ label: '待支付' }, { label: '已支付' }, { label: '已取消' }]` 每个 label 都是 3。这是 options 列表这种最常见字典形态能被 C 规则命中的前提。数组属性 `{ tags: ['一', '二'] }` 的元素算 `object-value`，逐个计数。不递归进嵌套对象。
+- **`object-key` 还包括 map 索引**：`dict['联盟']`、`dict?.['键']`（规则表 D ③）、计算属性名 `['键']: 1`、类成员名。
+- **JSX**：`JsxText` → `template-text`，JSX 属性 → `template-attr`（含 `attr={'字面量'}`），`{'花括号文本'}` → `literal`。
+- **完全跳过**：注释、import/export/动态 import/require 路径、正则、字符串字面量类型（`type S = '已封盘'`、`Record<'键', X>`）、接口成员名、`declare module '…'`。
+- **位置**：统一指向 AST 节点起点（字符串 → 引号；模板 middle/tail → `}`；文本节点 → 第一个非空白字符），`offset` 相对整个文件，行列由 `utils/line-index.ts` 从 offset 反查。
+
 ## 测试规范
 
 - **每条规则必须有 fixture 测试**，并有一组专门的**优先级冲突测试**（同时满足两条规则的节点，断言最终分类）。
@@ -136,7 +155,7 @@ pnpm --filter @i18n-triage/cli dev <dir>   # 直接跑 CLI 源码
 | ------- | --------------------------------------------------------------------------------- | ---- |
 | Day 1   | 仓库骨架 + CLAUDE.md + 核心类型 + smoke 测试                                      | ✅   |
 | Day 2   | `parsers/vue-sfc.ts`（先产出 NodeTypes 对照表到 `docs/vue-template-ast.md`）      | ✅   |
-| Day 3   | `parsers/script.ts`（先产出 ts-morph 判定表到 `docs/ts-morph-kinds.md`）          | ⬜   |
+| Day 3   | `parsers/script.ts`（先产出 ts-morph 判定表到 `docs/ts-morph-kinds.md`）          | ✅   |
 | Day 4-5 | `rules/` 四条规则 + engine + defaults + 优先级测试                                | ⬜   |
 | Day 6   | cli + text/json reporter + `examples/demo`                                        | ⬜   |
 | Day 7   | 跑真实开源项目、统计准确率、README                                                | ⬜   |
