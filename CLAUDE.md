@@ -156,6 +156,16 @@ kind 判定的关键语义（详表见 `docs/ts-morph-kinds.md`、`docs/vue-temp
 - 文本报告用 `display-width.ts` 按东亚宽字符对齐列；A 类 fallback 项右侧标 `待确认`；C 类只按文件汇总数量并给「走配置化翻译表」提示。
 - `examples/demo` 是 CLI 的端到端 fixture，期望计数写在 `packages/cli/src/scan.test.ts` 与 `examples/README.md`；改解析器或规则导致计数变化时，两处都要同步。
 
+## 发版与 CI（「后续」阶段，进行中）
+
+- **SARIF**：`reporters/sarif.ts`，`--format sarif`。一类一条 rule（A `warning`，B / C / D `note`），位置 `%SRCROOT%` 相对路径 + `columnKind: utf16CodeUnits`，`partialFingerprints['i18nTriage/v1']` 是 FNV-1a(file, kind, value, attrName, calleeName)，与行号无关。解析失败进 `invocations[0].toolExecutionNotifications`（error），跳过文件进 note。
+- **版本号**：`packages/cli/tsdown.config.ts` 用 `define` 把 package.json 的 version 注入 `__VERSION__`；tsx 直接跑源码时是 `0.0.0-dev`。`--version` 与 SARIF `tool.driver.version` 都用它。
+- **CI**：`.github/workflows/ci.yml`（node 20 / 22：lint → typecheck → test → build → 用产物扫 examples/demo 出 SARIF 并做结构校验）。
+- **可复用 action**：根目录 `action.yml`（composite）：`npx --package @i18n-triage/cli@<version> i18n-triage … --format sarif` → `github/codeql-action/upload-sarif@v3`。**依赖 npm 上有包**，发包前不可用。
+- **npm**：三个包 `0.1.0`，`publishConfig.access: public`；根 `pnpm release:dry` 做打包演练，`pnpm release` 真发（需要先 `npm login`，且 `@i18n-triage` scope 需要在 npm 上建同名 org）。`pnpm pack` 已验证：产物只含 dist + LICENSE + README，manifest 的 main / exports 已切到 dist，装进空项目后 bin 可直接运行。
+- **仓库还没有 remote**；README / action 里的 `OWNER` 占位等仓库发布后替换，SARIF 的 `informationUri` 也等有 URL 再填。
+- 剩余：`--fix` 抽 key、语言包完整度 / 死 key 检测。
+
 ## 测试规范
 
 - **每条规则必须有 fixture 测试**，并有一组专门的**优先级冲突测试**（同时满足两条规则的节点，断言最终分类）。

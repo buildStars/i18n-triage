@@ -13,7 +13,9 @@
     "lint": "eslint .",
     "triage": "tsx packages/cli/src/bin.ts",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "release": "pnpm build && pnpm -r --filter \"./packages/*\" publish --access public",
+    "release:dry": "pnpm build && pnpm -r --filter \"./packages/*\" publish --access public --dry-run --no-git-checks"
   },
   "devDependencies": {
     "@i18n-triage/eslint-config": "workspace:*",

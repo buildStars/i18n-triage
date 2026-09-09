@@ -1,8 +1,19 @@
 {
   "name": "@i18n-triage/reporters",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Report formatters for i18n-triage: text / json / sarif / html.",
   "license": "MIT",
+  "author": "neo",
+  "keywords": [
+    "i18n",
+    "vue",
+    "typescript",
+    "ast",
+    "hardcoded-strings",
+    "chinese",
+    "localization",
+    "sarif"
+  ],
   "type": "module",
   "sideEffects": false,
   "main": "./src/index.ts",
@@ -11,6 +22,7 @@
     ".": "./src/index.ts"
   },
   "publishConfig": {
+    "access": "public",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "exports": {
@@ -23,6 +35,9 @@
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsdown",
     "test": "vitest run --passWithNoTests",

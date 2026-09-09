@@ -1,8 +1,19 @@
 {
   "name": "@i18n-triage/cli",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Command-line entry for i18n-triage. All file IO lives here.",
   "license": "MIT",
+  "author": "neo",
+  "keywords": [
+    "i18n",
+    "vue",
+    "typescript",
+    "ast",
+    "hardcoded-strings",
+    "chinese",
+    "localization",
+    "sarif"
+  ],
   "type": "module",
   "bin": {
     "i18n-triage": "./dist/bin.js"
@@ -13,6 +24,7 @@
     ".": "./src/index.ts"
   },
   "publishConfig": {
+    "access": "public",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "exports": {
@@ -25,6 +37,9 @@
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsdown",
     "dev": "tsx src/bin.ts",
