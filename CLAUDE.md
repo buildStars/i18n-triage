@@ -45,16 +45,17 @@ i18n-triage 把字符串按 **AST 位置 + 调用点上下文** 分成四类，�
 
 ## 技术选型（已定，不要改）
 
-| 用途                   | 选型                                                                                          |
-| ---------------------- | --------------------------------------------------------------------------------------------- |
-| `.vue` 拆块            | `@vue/compiler-sfc` 的 `parse()`                                                              |
-| template → AST         | `@vue/compiler-dom` 的 `compile()`（`prefixIdentifiers: false`），只取 AST，不用 codegen 结果 |
-| script / `.ts` / `.js` | `ts-morph`（`createSourceFile` 从字符串创建，不用 `addSourceFileAtPath`）                     |
-| 测试                   | vitest                                                                                        |
-| 包管理 / 任务编排      | pnpm workspace + Turborepo                                                                    |
-| 构建                   | tsdown（ESM）                                                                                 |
-| 语言                   | TypeScript 严格模式                                                                           |
-| 终端着色               | picocolors（不用 chalk 5）                                                                    |
+| 用途                   | 选型                                                                                                                                                                                         |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.vue` 拆块            | `@vue/compiler-sfc` 的 `parse()`                                                                                                                                                             |
+| template → AST         | `@vue/compiler-dom` 的原始 parse AST。实际取 `descriptor.template.ast`（compiler-sfc 已调用 compiler-dom 解析，且位置是整文件坐标），不再二次 `compile()`，理由见 `docs/vue-template-ast.md` |
+| 模板表达式里的字符串   | TypeScript parser（`ts-morph` 导出的 `ts`），见 `parsers/expression.ts`                                                                                                                      |
+| script / `.ts` / `.js` | `ts-morph`（`createSourceFile` 从字符串创建，不用 `addSourceFileAtPath`）                                                                                                                    |
+| 测试                   | vitest                                                                                                                                                                                       |
+| 包管理 / 任务编排      | pnpm workspace + Turborepo                                                                                                                                                                   |
+| 构建                   | tsdown（ESM）                                                                                                                                                                                |
+| 语言                   | TypeScript 严格模式                                                                                                                                                                          |
+| 终端着色               | picocolors（不用 chalk 5）                                                                                                                                                                   |
 
 **不要用 tree-sitter**：多语言支持对本项目无用，且引入二进制依赖。
 
@@ -67,7 +68,8 @@ i18n-triage/
 │   │   └── src/
 │   │       ├── types.ts        # 核心类型：StringNode / Category / Rule / TriageResult
 │   │       ├── utils/chinese.ts# 中文检测正则，全仓库唯一定义处
-│   │       ├── parsers/        # vue-sfc.ts（template）/ script.ts（ts-morph）
+│   │       ├── utils/line-index.ts # 整文件 offset → 行列，所有解析器共用
+│   │       ├── parsers/        # vue-sfc.ts（template）/ expression.ts（模板表达式）/ script.ts（ts-morph）
 │   │       └── rules/          # a-ui-text / b-debug-log / c-dict / d-internal-key / engine / defaults
 │   ├── cli/           # 命令行入口 + 配置加载 + 文件发现。所有 IO 只在这里
 │   └── reporters/     # text / json / sarif / html 格式化器，纯函数，不写文件
@@ -133,7 +135,7 @@ pnpm --filter @i18n-triage/cli dev <dir>   # 直接跑 CLI 源码
 | 阶段    | 内容                                                                              | 状态 |
 | ------- | --------------------------------------------------------------------------------- | ---- |
 | Day 1   | 仓库骨架 + CLAUDE.md + 核心类型 + smoke 测试                                      | ✅   |
-| Day 2   | `parsers/vue-sfc.ts`（先产出 NodeTypes 对照表到 `docs/vue-template-ast.md`）      | ⬜   |
+| Day 2   | `parsers/vue-sfc.ts`（先产出 NodeTypes 对照表到 `docs/vue-template-ast.md`）      | ✅   |
 | Day 3   | `parsers/script.ts`（先产出 ts-morph 判定表到 `docs/ts-morph-kinds.md`）          | ⬜   |
 | Day 4-5 | `rules/` 四条规则 + engine + defaults + 优先级测试                                | ⬜   |
 | Day 6   | cli + text/json reporter + `examples/demo`                                        | ⬜   |

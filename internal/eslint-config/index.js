@@ -1,4 +1,5 @@
 import js from '@eslint/js'
+import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 /**
@@ -43,6 +44,11 @@ export const base = [
     ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**', '**/.turbo/**'],
   },
   js.configs.recommended,
+  {
+    // 纯 JS 文件（eslint.config.js、tsdown/vitest 配置、scripts/ 下的开发脚本）跑在 Node 上
+    files: ['**/*.js', '**/*.mjs', '**/*.cjs'],
+    languageOptions: { globals: { ...globals.nodeBuiltin } },
+  },
   ...tseslint.configs.recommended,
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.mts', '**/*.cts'],

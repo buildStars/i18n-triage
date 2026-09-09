@@ -34,5 +34,10 @@
     "tsdown": "^0.23.0",
     "typescript": "~5.9.3",
     "vitest": "^4.1.11"
+  },
+  "dependencies": {
+    "@vue/compiler-dom": "^3.5.42",
+    "@vue/compiler-sfc": "^3.5.42",
+    "ts-morph": "^28.0.0"
   }
 }

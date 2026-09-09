@@ -1,0 +1,9 @@
+# 仓库内统一 LF，避免 Windows 上 autocrlf 造成的行尾抖动
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
