@@ -190,5 +190,5 @@ pnpm --filter @i18n-triage/cli dev <dir>   # 直接跑 CLI 源码
 | Day 3   | `parsers/script.ts`（先产出 ts-morph 判定表到 `docs/ts-morph-kinds.md`）          | ✅   |
 | Day 4-5 | `rules/` 四条规则 + engine + defaults + 优先级测试                                | ✅   |
 | Day 6   | cli + text/json reporter + `examples/demo`                                        | ✅   |
-| Day 7   | 跑真实开源项目、统计准确率、README                                                | ⬜   |
+| Day 7   | 跑真实开源项目、统计准确率、README                                                | ✅   |
 | 后续    | SARIF reporter、`--fix` 抽 key、语言包完整度 / 死 key 检测、GitHub Action、发 npm | ⬜   |
