@@ -4,6 +4,9 @@
 
 Existing scanners grep for CJK characters and report everything. i18n-triage parses the real AST (`@vue/compiler-sfc` + `ts-morph`), looks at _where_ each string sits and _who_ consumes it, and sorts strings into four buckets. Only bucket A — text a user will see — lands in front of you.
 
+[![CI](https://github.com/buildStars/i18n-triage/actions/workflows/ci.yml/badge.svg)](https://github.com/buildStars/i18n-triage/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+
 [中文版 README](./README.zh-CN.md) · [Validation report](./docs/validation.md)
 
 ```

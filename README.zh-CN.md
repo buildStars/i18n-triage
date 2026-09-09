@@ -4,6 +4,9 @@
 
 现有的 i18n 扫描器用正则找中文字符然后全部报出来。i18n-triage 走真正的 AST（`@vue/compiler-sfc` + `ts-morph`），按字符串**所在的位置**和**被谁消费**分成四类，只有 A 类——用户会看到的文案——需要你处理。
 
+[![CI](https://github.com/buildStars/i18n-triage/actions/workflows/ci.yml/badge.svg)](https://github.com/buildStars/i18n-triage/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+
 [English README](./README.md) · [真实项目验证报告](./docs/validation.md)
 
 ```
