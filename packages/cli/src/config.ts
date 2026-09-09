@@ -128,6 +128,19 @@ export const DEFAULT_INCLUDE: readonly string[] = ['**/*.{vue,ts,js,tsx,jsx}']
  * - mock 数据与测试（`it('应该…')` 的描述不是 UI 文案）
  * - 压缩 / 打包产物（`*.min.js`、`*.umd.js`）与类型声明
  */
+/**
+ * mock / 测试文件：里面的中文不是待翻译的硬编码文案，主命令默认不扫；
+ * 但 `locales` 子命令要扫——菜单、图表数据常由 mock 接口下发，key 只出现在 mock 里也算「还在用」。
+ */
+export const DEFAULT_IGNORE_MOCK_TESTS: readonly string[] = [
+  '**/mock/**',
+  '**/mocks/**',
+  '**/__mocks__/**',
+  '**/__tests__/**',
+  '**/*.test.*',
+  '**/*.spec.*',
+]
+
 export const DEFAULT_IGNORE: readonly string[] = [
   '**/node_modules/**',
   '**/dist/**',
@@ -149,12 +162,7 @@ export const DEFAULT_IGNORE: readonly string[] = [
   '**/zh-HK.*',
   '**/zh.*',
   // mock / 测试
-  '**/mock/**',
-  '**/mocks/**',
-  '**/__mocks__/**',
-  '**/__tests__/**',
-  '**/*.test.*',
-  '**/*.spec.*',
+  ...DEFAULT_IGNORE_MOCK_TESTS,
   // 产物
   '**/*.min.js',
   '**/*.umd.js',

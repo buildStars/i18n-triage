@@ -156,15 +156,16 @@ kind 判定的关键语义（详表见 `docs/ts-morph-kinds.md`、`docs/vue-temp
 - 文本报告用 `display-width.ts` 按东亚宽字符对齐列；A 类 fallback 项右侧标 `待确认`；C 类只按文件汇总数量并给「走配置化翻译表」提示。
 - `examples/demo` 是 CLI 的端到端 fixture，期望计数写在 `packages/cli/src/scan.test.ts` 与 `examples/README.md`；改解析器或规则导致计数变化时，两处都要同步。
 
-## 发版与 CI（「后续」阶段，进行中）
+## 发版与 CI（已完成）
 
 - **SARIF**：`reporters/sarif.ts`，`--format sarif`。一类一条 rule（A `warning`，B / C / D `note`），位置 `%SRCROOT%` 相对路径 + `columnKind: utf16CodeUnits`，`partialFingerprints['i18nTriage/v1']` 是 FNV-1a(file, kind, value, attrName, calleeName)，与行号无关。解析失败进 `invocations[0].toolExecutionNotifications`（error），跳过文件进 note。
 - **版本号**：`packages/cli/tsdown.config.ts` 用 `define` 把 package.json 的 version 注入 `__VERSION__`；tsx 直接跑源码时是 `0.0.0-dev`。`--version` 与 SARIF `tool.driver.version` 都用它。
 - **CI**：`.github/workflows/ci.yml`。`check` job 在 Node 22 / 24 上 lint → typecheck → test → build → 用产物扫 examples/demo 出 SARIF；`runtime-smoke` job 在 Node 20 / 22 上把打包的 tarball 装进空项目跑 demo。**构建链（tsdown 0.23 / rolldown-plugin-dts）要求 Node ^22.18 || ^24.11，Node 20 不能从源码构建**；发布的包 engines 是 `>=20.19.0`（cac 的要求）。失败时各步骤日志尾部会写进 job summary，公开仓库不登录也能看。测试里不要写只在 Windows 成立的断言（`\` 路径），拉起子进程的用例要给足超时。
 - **可复用 action**：根目录 `action.yml`（composite）：`npx --yes i18n-triage@<version> … --format sarif` → `github/codeql-action/upload-sarif@v3`。**依赖 npm 上有 `i18n-triage` 包**，发包前不可用。
 - **npm**：`i18n-triage@0.1.0` 已于 2026-09-09 发布（tag `v0.1.0`）。发布用 granular access token（必须勾 Bypass 2FA，npm 现在强制要求 2FA 或 bypass token），token 存在用户 `~/.npmrc`，**不要把 token 写进仓库或对话**。根 `pnpm release:dry` 打包演练，`pnpm release` 只发 CLI；`pnpm release:libs` 发两个 scope 包，前提是 npm 上建了 `i18n-triage` org（尚未）。发新版本：改三个 package.json 的 version → CHANGELOG → commit → `pnpm release` → `git tag vX.Y.Z && git push origin vX.Y.Z`。`pnpm pack` 已验证：产物只含 dist + LICENSE + README，manifest 的 main / exports 已切到 dist，装进空项目后 bin 可直接运行。
-- **仓库还没有 remote**；README / action 里的 `OWNER` 占位等仓库发布后替换，SARIF 的 `informationUri` 也等有 URL 再填。
-- 剩余：`--fix` 抽 key、语言包完整度 / 死 key 检测。
+- **仓库**：https://github.com/buildStars/i18n-triage（`origin`，分支 `main`）。README / action 里的 owner 已替换，SARIF 的 `informationUri` 指向它。CI 全绿的判断标准是 5 个 job（check ×2、action-smoke、runtime-smoke ×2）都 success。
+- **CLI 的 dts 构建用 `packages/cli/tsconfig.build.json`**（tsdown `tsconfig` 选项）：它把 core / reporters 的源码也列进 include。rolldown-plugin-dts 的 eager 模式会给每个「不在 tsconfig 根文件列表里」的模块单独 new 一个 TS Program，每个 Program 都要加载 ts-morph → typescript 的类型，几十个模块就把默认 4 GB 堆撑爆（locales 加进来后 CI Build 步骤 OOM 过一次）；只建一个 Program 后构建约 1 s。新增 workspace 包要打进 CLI 时同步加进这个 include。
+- 已发版本：0.1.0（基础审计 + SARIF + Action）、0.2.0（`--fix`）。`locales` 子命令在 CHANGELOG 的 0.3.0 (unreleased) 里，发版要用户点头。
 
 ## `--fix` 约定（已实现）
 
@@ -181,7 +182,7 @@ kind 判定的关键语义（详表见 `docs/ts-morph-kinds.md`、`docs/vue-temp
 ## `locales` 子命令约定（已实现）
 
 - core `src/locales/`：`flattenMessages`（嵌套 → `a.b.c`，数组按下标，只留字符串叶子）、`compareLocales`（missing / extra / empty / translated）、`findKeyUsages`（ts-morph 走 CallExpression，不依赖中文过滤；`t()` 类第一个实参为字面量 → static，模板字符串 → dynamic 带前缀，其他 → dynamic 无前缀；`<i18n-t keypath>` 与 `v-t="'key'"` 也算 static；同时收集所有字符串字面量 `literals`）、`auditLocales`（dead / maybeUsed（前缀）/ referencedAsLiteral / undefined / dynamicWithoutPrefix）。判定顺序：static 引用 > 动态前缀 > 字面量相等 > 死。
-- cli `src/locales.ts`：`detectLocaleFile` 只认文件名或上级目录名是语言代码（`/^[a-z]{2}(?:[-_][A-Za-z]{2,4})?$/`）的文件，`index.ts` 之类跳过；`.json` 直接读，其余用 jiti 取默认导出；源语言默认 `zh-CN`，找不到时依次 `zh_CN` / `zh-cn` / `zh-Hans` / `zh`，用户显式指定的不回退。退出码：缺失、空值、未定义 key、错误 → 1。
+- cli `src/locales.ts`：`detectLocaleFile` 只认文件名或上级目录名是语言代码（`/^[a-z]{2}(?:[-_][A-Za-z]{2,4})?$/`）的文件，`index.ts` 之类跳过；`.json` 直接读，其余用 jiti 取默认导出；源语言默认 `zh-CN`，找不到时依次 `zh_CN` / `zh-cn` / `zh-Hans` / `zh`，用户显式指定的不回退。退出码：缺失、空值、未定义 key、错误 → 1。**代码引用的文件发现不排除 mock / 测试**（`DEFAULT_IGNORE_MOCK_TESTS` 从 `config.ignore` 里过滤掉）：element-plus-admin 的 31 个「死 key」全部出现在 `mock/` 的菜单 / 图表数据里，主命令排除 mock 是因为那里没有待翻译文案，而 locales 要把它们当引用证据。
 - 脚本层为此导出了 `withTsMorphSourceFile`、`getCalleeName`（script.ts）与 `maskOutside`（vue-sfc.ts），其他需要 ts-morph 遍历的模块复用它们，不要再建 Project。
 - fixture：`examples/locales-demo`（zh-CN.json + zh-CN/menu.json、en-US.json、ja/menu.json、zh-TW.ts、index.ts 应被跳过、router.ts 的 meta.title 演示字面量引用），期望值在 `cli/src/locales.test.ts`。
 - 真实项目提醒（element-plus-admin）：路由 `meta.title` / 图表月份这类先存 key 再动态 `t()` 的写法很常见，没有字面量启发式会把它们全判成死 key；即便有，报告仍应带「N 处动态调用没有静态前缀」的提示。
@@ -221,4 +222,4 @@ pnpm --filter i18n-triage dev <dir>   # 直接跑 CLI 源码（cwd 是 packages/
 | Day 4-5 | `rules/` 四条规则 + engine + defaults + 优先级测试                                | ✅   |
 | Day 6   | cli + text/json reporter + `examples/demo`                                        | ✅   |
 | Day 7   | 跑真实开源项目、统计准确率、README                                                | ✅   |
-| 后续    | SARIF reporter、`--fix` 抽 key、语言包完整度 / 死 key 检测、GitHub Action、发 npm | ⬜   |
+| 后续    | SARIF reporter、`--fix` 抽 key、语言包完整度 / 死 key 检测、GitHub Action、发 npm | ✅   |

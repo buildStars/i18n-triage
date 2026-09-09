@@ -82,7 +82,7 @@ describe('bin.ts — 端到端', () => {
     const r = run(['locales', localesDemo])
     expect(r.code).toBe(1)
     expect(r.stdout).toContain('源语言 zh-CN（9 个 key）')
-    expect(r.stdout).toContain('━━ 死 key（2）━━')
+    expect(r.stdout).toContain('━━ 死 key（1）━━')
     expect(r.stdout).toContain('typoo')
   })
 

@@ -88,12 +88,12 @@ describe('runLocales on examples/locales-demo', async () => {
   })
 
   it('finds usages in .vue and .ts code, including i18n.global.t and <i18n-t keypath>', () => {
-    expect(result.codeFiles).toBe(3)
+    expect(result.codeFiles).toBe(4)
     expect(audit.usedKeys).toBe(5)
-    expect(audit.dead).toEqual(['common.unused', 'typo'])
+    expect(audit.dead).toEqual(['common.unused'])
     expect(audit.maybeUsed).toEqual([{ key: 'order.status.pending', prefix: 'order.status.' }])
-    // router.ts 的 meta.title 里存着 'common.cancel'
-    expect(audit.referencedAsLiteral).toEqual(['common.cancel'])
+    // router.ts 的 meta.title 里存着 'common.cancel'，mock/menu.mock.ts 里存着 'typo'
+    expect(audit.referencedAsLiteral).toEqual(['common.cancel', 'typo'])
     expect(audit.undefined.map((u) => `${u.key}@${u.loc.file}:${u.loc.line}`)).toEqual([
       'typoo@src/views/Home.vue:10',
     ])
@@ -108,10 +108,10 @@ describe('runLocales on examples/locales-demo', async () => {
     const out = formatLocalesText(result)
     expect(out).toContain('源语言 zh-CN（9 个 key）')
     expect(out).toMatch(/en-US\s+缺失\s+3\s+多余\s+1\s+空值\s+1/)
-    expect(out).toContain('━━ 死 key（2）━━')
+    expect(out).toContain('━━ 死 key（1）━━')
     expect(out).toContain('common.unused')
     expect(out).toContain('━━ 可能被动态使用（1）━━')
-    expect(out).toContain('━━ 可能通过字面量引用（1）━━')
+    expect(out).toContain('━━ 可能通过字面量引用（2）━━')
     expect(out).toContain('common.cancel')
     expect(out).toContain('━━ 未定义 key（1）━━')
     expect(out).toMatch(/src\/views\/Home\.vue:10\s+typoo/)
@@ -124,7 +124,7 @@ describe('runLocales on examples/locales-demo', async () => {
       files: unknown[]
     }
     expect(parsed.audit.sourceKeys).toBe(9)
-    expect(parsed.audit.dead).toEqual(['common.unused', 'typo'])
+    expect(parsed.audit.dead).toEqual(['common.unused'])
     expect(parsed.files).toHaveLength(5)
   })
 })

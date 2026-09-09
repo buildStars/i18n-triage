@@ -177,7 +177,7 @@ Finds locale files under `**/locales/**`, `**/locale/**`, `**/lang(s)/**`, `**/i
 | referenced as literal   | not referenced statically, but some string literal in code equals the key (route `meta.title`, menu configs) |
 | undefined keys          | `t('typoo')` in code with no such key in the source locale, with file and line                               |
 
-References are collected with the same AST machinery as the scanner — `t()` / `$t()` / `i18n.global.t()` first arguments in scripts and template expressions, `<i18n-t keypath>`, `v-t="'key'"` — so comments never count. Exit code is 1 when a locale has missing or empty values, an undefined key is used, or the source locale cannot be found. Config: `locales: { files, source, callees, keyAttrs }`.
+References are collected with the same AST machinery as the scanner — `t()` / `$t()` / `i18n.global.t()` first arguments in scripts and template expressions, `<i18n-t keypath>`, `v-t="'key'"` — so comments never count. Unlike the scanner, `locales` also reads mock and test files: menu and chart data often come from a mock API, and a key that only appears there is still in use (it shows up under _referenced as literal_). Exit code is 1 when a locale has missing or empty values, an undefined key is used, or the source locale cannot be found. Config: `locales: { files, source, callees, keyAttrs }`.
 
 ### GitHub Action
 

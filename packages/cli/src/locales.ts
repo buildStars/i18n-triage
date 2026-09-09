@@ -15,6 +15,7 @@ import pc from 'picocolors'
 import { glob } from 'tinyglobby'
 
 import type { ResolvedConfig } from './config'
+import { DEFAULT_IGNORE_MOCK_TESTS } from './config'
 import { discoverFiles, toPosixRelative } from './discover'
 import { isProbablyGenerated } from './scan'
 
@@ -143,7 +144,13 @@ export async function runLocales(
     if (locale !== sourceLocale) targets.set(locale, messages)
 
   // ---- 代码引用 ----
-  const codeFiles = await discoverFiles(paths, { cwd, config })
+  // 主命令排除 mock / 测试是因为里面不是待翻译的硬编码文案；
+  // 这里要把它们扫进来：key 只出现在 mock 接口数据里（菜单、图表标签）也是「还在用」的证据
+  const codeConfig: ResolvedConfig = {
+    ...config,
+    ignore: config.ignore.filter((p) => !DEFAULT_IGNORE_MOCK_TESTS.includes(p)),
+  }
+  const codeFiles = await discoverFiles(paths, { cwd, config: codeConfig })
   const usages: KeyUsages = { static: [], dynamic: [], literals: [] }
   const literals = new Set<string>()
   const callees =

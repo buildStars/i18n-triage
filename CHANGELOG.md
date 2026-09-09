@@ -4,6 +4,8 @@
 
 - `i18n-triage locales [paths]`: locale completeness (missing / extra / empty per target locale), dead keys, keys possibly used via a dynamic-call prefix or a matching string literal (route meta, menu configs), and undefined keys with locations; JSON and TS/JS locale modules, flat and `<locale>/<namespace>` layouts; `--source`, `--locale-files`, `--format text|json`, exit 1 as a CI gate; config block `locales`
 - core: `findKeyUsages`, `auditLocales`, `compareLocales`, `flattenMessages`
+- `locales` scans mock and test files for key references (the scanner still skips them): keys that only appear in mock API data — menus, chart labels — are reported as _referenced as literal_ instead of dead
+- build: the CLI's bundled `.d.ts` is now generated from a single TypeScript program (`packages/cli/tsconfig.build.json`); the previous setup ran out of heap once the core grew past ~40 modules
 
 ## 0.2.0 (2026-09-09)
 

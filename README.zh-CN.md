@@ -177,7 +177,7 @@ npx i18n-triage locales src --source en --format json
 | 可能通过字面量引用 | 没有静态引用，但代码里有字符串字面量恰好等于它（路由 `meta.title`、菜单配置先存后 `t()`） |
 | 未定义 key         | 代码里 `t('typoo')`，源语言里却没有这个 key，给出文件与行号                               |
 
-引用采集复用扫描器的 AST 机制——脚本与模板表达式里 `t()` / `$t()` / `i18n.global.t()` 的第一个实参、`<i18n-t keypath>`、`v-t="'key'"`——所以注释里的永远不算。有语言缺失或空值、用到未定义 key、找不到源语言时退出码 1。配置：`locales: { files, source, callees, keyAttrs }`。
+引用采集复用扫描器的 AST 机制——脚本与模板表达式里 `t()` / `$t()` / `i18n.global.t()` 的第一个实参、`<i18n-t keypath>`、`v-t="'key'"`——所以注释里的永远不算。与主命令不同，`locales` 也会扫 mock / 测试文件：菜单、图表数据常由 mock 接口下发，key 只出现在那里也算还在用（归入「可能通过字面量引用」）。有语言缺失或空值、用到未定义 key、找不到源语言时退出码 1。配置：`locales: { files, source, callees, keyAttrs }`。
 
 ### GitHub Action
 
