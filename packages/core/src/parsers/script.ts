@@ -103,6 +103,10 @@ function visit(node: Node, state: WalkState): void {
     visitJsxText(node, state)
     return
   }
+  if (Node.isIdentifier(node)) {
+    visitIdentifier(node, state)
+    return
+  }
   if (Node.isStringLiteral(node) || Node.isNoSubstitutionTemplateLiteral(node)) {
     emit(node, node.getLiteralText(), node.getStart(), state)
     return
@@ -111,6 +115,40 @@ function visit(node: Node, state: WalkState): void {
     const text = node.getLiteralText()
     if (text.length > 0) emit(node, text, node.getStart(), state)
   }
+}
+
+/**
+ * 中文标识符：`{ 待支付: 0 }`、`enum E { 支付宝 = 1 }`、`dict.待支付` 里的名字不是字符串字面量，
+ * 但同样是内部键（D）。只认 key 位置；作为变量 / 参数使用的中文标识符不报。
+ */
+function visitIdentifier(node: Node, state: WalkState): void {
+  const text = node.getText()
+  if (!containsChinese(text)) return
+  const parent = node.getParent()
+  if (!parent) return
+
+  let kind: StringKind | undefined
+  if (Node.isEnumMember(parent) && parent.getNameNode() === node) {
+    kind = 'enum-member'
+  } else if (
+    (Node.isPropertyAssignment(parent) ||
+      Node.isShorthandPropertyAssignment(parent) ||
+      Node.isPropertyDeclaration(parent) ||
+      Node.isMethodDeclaration(parent) ||
+      Node.isGetAccessorDeclaration(parent) ||
+      Node.isSetAccessorDeclaration(parent)) &&
+    parent.getNameNode() === node
+  ) {
+    kind = 'object-key'
+  } else if (Node.isPropertyAccessExpression(parent) && parent.getNameNode() === node) {
+    kind = 'object-key'
+  }
+  if (kind === undefined) return
+
+  const out: StringNode = { value: text, kind, loc: makeLoc(state, node.getStart()) }
+  const calleeName = findEnclosingCalleeName(node)
+  if (calleeName !== undefined) out.calleeName = calleeName
+  state.out.push(out)
 }
 
 function visitJsxText(node: Node, state: WalkState): void {

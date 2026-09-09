@@ -11,6 +11,7 @@
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "lint": "eslint .",
+    "triage": "tsx packages/cli/src/bin.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
@@ -19,6 +20,7 @@
     "@i18n-triage/tsconfig": "workspace:*",
     "eslint": "^10.10.0",
     "prettier": "^3.9.6",
+    "tsx": "^4.23.13",
     "turbo": "^2.10.12",
     "typescript": "~5.9.3"
   }

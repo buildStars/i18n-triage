@@ -3,3 +3,6 @@ dist
 coverage
 .turbo
 pnpm-lock.yaml
+
+# 示例项目是解析器 / CLI 的 fixture：引号 key、换行位置都是被测内容，不能被格式化改写
+examples/

@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "i18n-triage": "./dist/index.js"
+    "i18n-triage": "./dist/bin.js"
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -27,15 +27,22 @@
   ],
   "scripts": {
     "build": "tsdown",
-    "dev": "tsx src/index.ts",
+    "dev": "tsx src/bin.ts",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@i18n-triage/core": "workspace:*",
-    "@i18n-triage/reporters": "workspace:*"
+    "@vue/compiler-dom": "^3.5.42",
+    "@vue/compiler-sfc": "^3.5.42",
+    "cac": "^7.0.0",
+    "jiti": "^2.7.0",
+    "picocolors": "^1.1.1",
+    "tinyglobby": "^0.2.17",
+    "ts-morph": "^28.0.0"
   },
   "devDependencies": {
+    "@i18n-triage/core": "workspace:*",
+    "@i18n-triage/reporters": "workspace:*",
     "@i18n-triage/tsconfig": "workspace:*",
     "@types/node": "^24.0.0",
     "tsdown": "^0.23.0",

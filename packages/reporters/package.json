@@ -29,7 +29,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@i18n-triage/core": "workspace:*"
+    "@i18n-triage/core": "workspace:*",
+    "picocolors": "^1.1.1"
   },
   "devDependencies": {
     "@i18n-triage/tsconfig": "workspace:*",

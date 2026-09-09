@@ -1,0 +1,187 @@
+import { access, readFile } from 'node:fs/promises'
+import path from 'node:path'
+
+import type { Category, RulesConfig } from '@i18n-triage/core'
+import {
+  DEFAULT_DEBUG_APIS,
+  DEFAULT_DICT_DIRS,
+  DEFAULT_DICT_SIBLING_THRESHOLD,
+  DEFAULT_DISPLAY_ATTRS,
+  DEFAULT_I18N_CALLEES,
+  DEFAULT_UI_APIS,
+} from '@i18n-triage/core'
+import { CATEGORIES, CATEGORY_BY_LETTER, DEFAULT_ONLY } from '@i18n-triage/reporters'
+import { createJiti } from 'jiti'
+
+export type OutputFormat = 'text' | 'json'
+
+/** 用户在 i18n-triage.config.{ts,js,mjs,json} 里写的配置 */
+export interface I18nTriageConfig {
+  /** 扫描的 glob，默认 `['**\/*.{vue,ts,js,tsx,jsx}']` */
+  include?: string[]
+  /** 额外排除的 glob；始终在默认排除（node_modules / dist / .git / coverage）之上追加 */
+  ignore?: string[]
+  /** A：展示类属性白名单 */
+  displayAttrs?: string[]
+  /** A：UI 提示 API（模式语法见 core 的 callee-match） */
+  uiApis?: string[]
+  /** B：调试 / 日志 API */
+  debugApis?: string[]
+  /** C：字典目录名 */
+  dictDirs?: string[]
+  /** C：同一对象里含中文 value 的最低个数，默认 3 */
+  dictSiblingThreshold?: number
+  /** 已接入 i18n 的调用，实参整体剔除 */
+  i18nCallees?: string[]
+  /** true（默认）：上面各列表追加到内置白名单之后；false：整体替换 */
+  extendDefaults?: boolean
+  /** 只显示哪些类别：'A,C' 这样的字母串，或 Category 数组；默认 A,C */
+  only?: string | Category[]
+  /** 输出格式，默认 text */
+  format?: OutputFormat
+}
+
+export interface ResolvedConfig {
+  include: string[]
+  ignore: string[]
+  rulesConfig: RulesConfig
+  i18nCallees: readonly string[]
+  only: Category[]
+  format: OutputFormat
+  dictSiblingThreshold: number
+}
+
+export const DEFAULT_INCLUDE: readonly string[] = ['**/*.{vue,ts,js,tsx,jsx}']
+export const DEFAULT_IGNORE: readonly string[] = [
+  '**/node_modules/**',
+  '**/dist/**',
+  '**/.git/**',
+  '**/coverage/**',
+]
+
+/** 仅用于给配置文件提供类型提示 */
+export function defineConfig(config: I18nTriageConfig): I18nTriageConfig {
+  return config
+}
+
+/** `'A,C'` → Category[]；`'all'` → 全部四类 */
+export function parseOnly(input: string): Category[] {
+  const trimmed = input.trim()
+  if (trimmed.toLowerCase() === 'all') return [...CATEGORIES]
+  return trimmed
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+    .map((letter) => {
+      const upper = letter.toUpperCase()
+      const category = isLetter(upper) ? CATEGORY_BY_LETTER[upper] : undefined
+      if (!category) throw new Error(`未知类别 "${letter}"，--only 只接受 A / B / C / D 或 all`)
+      return category
+    })
+}
+
+function isLetter(s: string): s is 'A' | 'B' | 'C' | 'D' {
+  return s === 'A' || s === 'B' || s === 'C' || s === 'D'
+}
+
+/** 把用户配置与内置默认值合并成引擎可直接使用的配置 */
+export function resolveConfig(user: I18nTriageConfig = {}): ResolvedConfig {
+  const extend = user.extendDefaults ?? true
+  const merge = (defaults: readonly string[], custom?: string[]): string[] | undefined => {
+    if (custom === undefined) return undefined
+    return extend ? [...defaults, ...custom] : [...custom]
+  }
+
+  const rulesConfig: RulesConfig = {}
+  const displayAttrs = merge(DEFAULT_DISPLAY_ATTRS, user.displayAttrs)
+  if (displayAttrs) rulesConfig.displayAttrs = displayAttrs
+  const uiApis = merge(DEFAULT_UI_APIS, user.uiApis)
+  if (uiApis) rulesConfig.uiApis = uiApis
+  const debugApis = merge(DEFAULT_DEBUG_APIS, user.debugApis)
+  if (debugApis) rulesConfig.debugApis = debugApis
+  const dictDirs = merge(DEFAULT_DICT_DIRS, user.dictDirs)
+  if (dictDirs) rulesConfig.dictDirs = dictDirs
+  if (user.dictSiblingThreshold !== undefined) {
+    rulesConfig.dictSiblingThreshold = user.dictSiblingThreshold
+  }
+
+  const only =
+    user.only === undefined
+      ? [...DEFAULT_ONLY]
+      : typeof user.only === 'string'
+        ? parseOnly(user.only)
+        : [...user.only]
+
+  return {
+    include: [...(user.include ?? DEFAULT_INCLUDE)],
+    ignore: [...DEFAULT_IGNORE, ...(user.ignore ?? [])],
+    rulesConfig,
+    i18nCallees: merge(DEFAULT_I18N_CALLEES, user.i18nCallees) ?? DEFAULT_I18N_CALLEES,
+    only,
+    format: user.format ?? 'text',
+    dictSiblingThreshold: user.dictSiblingThreshold ?? DEFAULT_DICT_SIBLING_THRESHOLD,
+  }
+}
+
+const CONFIG_FILE_NAMES = [
+  'i18n-triage.config.ts',
+  'i18n-triage.config.mts',
+  'i18n-triage.config.js',
+  'i18n-triage.config.mjs',
+  'i18n-triage.config.cjs',
+  'i18n-triage.config.json',
+]
+
+export interface LoadedConfig {
+  path: string
+  config: I18nTriageConfig
+}
+
+/**
+ * 加载配置文件。查找顺序：
+ * 1. explicitPath（给了就只认它，不存在则报错）
+ * 2. cwd 下按 CONFIG_FILE_NAMES 顺序
+ * 3. fallbackDirs（通常是命令行给的目标目录），按给定顺序
+ * 都没有返回 undefined。
+ */
+export async function loadConfigFile(
+  cwd: string,
+  explicitPath?: string,
+  fallbackDirs: readonly string[] = [],
+): Promise<LoadedConfig | undefined> {
+  if (explicitPath !== undefined) {
+    const abs = path.resolve(cwd, explicitPath)
+    if (!(await exists(abs))) throw new Error(`配置文件不存在：${abs}`)
+    return { path: abs, config: await importConfig(abs) }
+  }
+  for (const dir of [cwd, ...fallbackDirs.map((d) => path.resolve(cwd, d))]) {
+    for (const name of CONFIG_FILE_NAMES) {
+      const abs = path.join(dir, name)
+      if (await exists(abs)) return { path: abs, config: await importConfig(abs) }
+    }
+  }
+  return undefined
+}
+
+async function exists(file: string): Promise<boolean> {
+  try {
+    await access(file)
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function importConfig(abs: string): Promise<I18nTriageConfig> {
+  let loaded: unknown
+  if (abs.endsWith('.json')) {
+    loaded = JSON.parse(await readFile(abs, 'utf8'))
+  } else {
+    const jiti = createJiti(import.meta.url, { interopDefault: true })
+    loaded = await jiti.import(abs, { default: true })
+  }
+  if (typeof loaded !== 'object' || loaded === null || Array.isArray(loaded)) {
+    throw new Error(`配置文件必须导出一个对象：${abs}`)
+  }
+  return loaded as I18nTriageConfig
+}

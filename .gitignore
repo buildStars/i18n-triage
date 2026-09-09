@@ -8,3 +8,7 @@ coverage/
 Thumbs.db
 .idea/
 .vscode/
+
+# 示例项目里故意放的「应被默认排除」的目录，需要进仓库供 CLI 测试使用
+!examples/demo/node_modules/
+!examples/demo/dist/

@@ -135,6 +135,16 @@ kind 判定的关键语义（详表见 `docs/ts-morph-kinds.md`、`docs/vue-temp
 - **fallback 语义**：所有规则都不命中 → `A_UI_TEXT` + `matchedBy: 'fallback'`。因此 A 类有两档：规则命中（高置信）与 fallback（待确认，如非白名单属性、裸 literal、未知调用的实参）。报告应区分展示这两档，不要混在一起。
 - 端到端断言见 `rules/integration.test.ts`：同一份 options 列表在 `constants/` 下是 C、在 `views/` 下是 A（fallback）。
 
+## CLI 与报告层约定（Day 6 已定）
+
+- `@i18n-triage/cli`：`src/bin.ts` 是可执行入口（`cac`），`src/index.ts` 是库入口（`defineConfig` / `scan` / `resolveConfig` / `loadConfigFile`）。根目录 `pnpm triage <dir>`（= `tsx packages/cli/src/bin.ts`，在仓库根目录下运行）直接跑源码；`pnpm --filter @i18n-triage/cli dev` 的 cwd 是 `packages/cli`，相对路径会从那里算。CLI 产物用 tsdown 把 core / reporters 打进 `dist/`（`deps.alwaysBundle`），因此 core 的第三方运行时依赖必须同时列在 cli 的 `dependencies` 里，否则会被一并打包进产物。
+- 调用链固定：`discoverFiles`（tinyglobby，默认排除 node_modules / dist / .git / coverage；显式指定的文件不受 include / ignore 限制）→ 读文件 → `parseSource` → `excludeI18nCalls` → `triage` → `countChineseRuns` → `buildScanReport`。单文件失败只记入 `report.errors`，不中断；有错误时退出码 1，致命错误 2。
+- 配置文件 `i18n-triage.config.{ts,mts,js,mjs,cjs,json}` 用 jiti 加载。查找顺序：`--config` 显式路径 → 当前工作目录 → 命令行给的目标目录（所以 `pnpm triage examples/demo` 能吃到 demo 自己的配置）。`extendDefaults` 默认 true：`displayAttrs` / `uiApis` / `debugApis` / `dictDirs` / `i18nCallees` **追加**到内置白名单；设为 false 才整体替换。`ignore` 永远是追加。CLI 的 `--format` / `--only` 覆盖配置文件。
+- `@i18n-triage/reporters` 只做 `ScanReport → string`：`buildScanReport(FileScan[], errors)` 汇总（结果按文件、offset 排序），`formatText` / `formatJson` 输出。`only` 默认 A + C；JSON 的 `only` 默认全部、摘要始终完整、`schemaVersion: 1`。
+- 摘要口径：`naive` = 正则会报出的中文片段数（`countChineseRuns`）；`ignored = naive − classified − i18nExcluded`（≥0）；`noiseRatio = (naive − A) / naive`。「降噪比」一行是核心卖点，格式固定为 `降噪比    N → M  （xx.x% 为噪音）`。
+- 文本报告用 `display-width.ts` 按东亚宽字符对齐列；A 类 fallback 项右侧标 `待确认`；C 类只按文件汇总数量并给「走配置化翻译表」提示。
+- `examples/demo` 是 CLI 的端到端 fixture，期望计数写在 `packages/cli/src/scan.test.ts` 与 `examples/README.md`；改解析器或规则导致计数变化时，两处都要同步。
+
 ## 测试规范
 
 - **每条规则必须有 fixture 测试**，并有一组专门的**优先级冲突测试**（同时满足两条规则的节点，断言最终分类）。
@@ -168,6 +178,6 @@ pnpm --filter @i18n-triage/cli dev <dir>   # 直接跑 CLI 源码
 | Day 2   | `parsers/vue-sfc.ts`（先产出 NodeTypes 对照表到 `docs/vue-template-ast.md`）      | ✅   |
 | Day 3   | `parsers/script.ts`（先产出 ts-morph 判定表到 `docs/ts-morph-kinds.md`）          | ✅   |
 | Day 4-5 | `rules/` 四条规则 + engine + defaults + 优先级测试                                | ✅   |
-| Day 6   | cli + text/json reporter + `examples/demo`                                        | ⬜   |
+| Day 6   | cli + text/json reporter + `examples/demo`                                        | ✅   |
 | Day 7   | 跑真实开源项目、统计准确率、README                                                | ⬜   |
 | 后续    | SARIF reporter、`--fix` 抽 key、语言包完整度 / 死 key 检测、GitHub Action、发 npm | ⬜   |
