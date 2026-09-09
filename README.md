@@ -87,7 +87,7 @@ Options:
 ```
 i18n-triage [...paths]
 
-  --format <text|json>   default text
+  --format <text|json|sarif>   default text; sarif is ready for GitHub Code Scanning
   --only <letters>       e.g. A,C (default) or all
   --config <path>        default: i18n-triage.config.{ts,mts,js,mjs,cjs,json} in cwd, then in the scanned directory
   --out <path>           write the report to a file

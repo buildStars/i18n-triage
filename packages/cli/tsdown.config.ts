@@ -1,4 +1,10 @@
+import { readFileSync } from 'node:fs'
+
 import { defineConfig } from 'tsdown'
+
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
+  version: string
+}
 
 export default defineConfig({
   entry: ['src/index.ts', 'src/bin.ts'],
@@ -11,5 +17,7 @@ export default defineConfig({
   fixedExtension: false,
   // core 的 index.ts 用了 export * 再导出，isolated 模式的 dts 插件跟不到，需要整程序 eager 发射
   dts: { eager: true },
+  // --version 与 SARIF tool.driver.version 用的版本号，来自 package.json
+  define: { __VERSION__: JSON.stringify(pkg.version) },
   clean: true,
 })

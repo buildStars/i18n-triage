@@ -87,7 +87,7 @@ node packages/cli/dist/bin.js path/to/your/project
 ```
 i18n-triage [...paths]
 
-  --format <text|json>   默认 text
+  --format <text|json|sarif>   默认 text；sarif 可直接上传 GitHub Code Scanning
   --only <letters>       如 A,C（默认）或 all
   --config <path>        默认在 cwd、然后在被扫描目录里找 i18n-triage.config.{ts,mts,js,mjs,cjs,json}
   --out <path>           把报告写到文件

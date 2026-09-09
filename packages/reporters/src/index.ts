@@ -23,3 +23,23 @@ export type { TextReporterOptions } from './text'
 export { formatText } from './text'
 export type { JsonReport, JsonReporterOptions, JsonResult } from './json'
 export { JSON_SCHEMA_VERSION, formatJson, toJsonReport } from './json'
+export type {
+  SarifInvocation,
+  SarifLevel,
+  SarifLocation,
+  SarifLog,
+  SarifNotification,
+  SarifReporterOptions,
+  SarifResult,
+  SarifResultProperties,
+  SarifRule,
+  SarifRun,
+} from './sarif'
+export {
+  SARIF_FINGERPRINT_KEY,
+  SARIF_RULE_IDS,
+  SARIF_SCHEMA,
+  SARIF_TOOL_NAME,
+  formatSarif,
+  toSarif,
+} from './sarif'

@@ -14,7 +14,7 @@ import {
 import { CATEGORIES, CATEGORY_BY_LETTER, DEFAULT_ONLY } from '@i18n-triage/reporters'
 import { createJiti } from 'jiti'
 
-export type OutputFormat = 'text' | 'json'
+export type OutputFormat = 'text' | 'json' | 'sarif'
 
 /** 用户在 i18n-triage.config.{ts,js,mjs,json} 里写的配置 */
 export interface I18nTriageConfig {

@@ -78,6 +78,10 @@ describe('resolveConfig', () => {
     expect(c.include).toEqual(['src/**/*.vue'])
   })
 
+  it('accepts sarif as an output format', () => {
+    expect(resolveConfig({ format: 'sarif' }).format).toBe('sarif')
+  })
+
   it('defineConfig is an identity helper for typing', () => {
     const cfg = { uiApis: ['x'] }
     expect(defineConfig(cfg)).toBe(cfg)

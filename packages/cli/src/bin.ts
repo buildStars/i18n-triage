@@ -3,14 +3,15 @@ import { mkdir, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 
-import { formatJson, formatText } from '@i18n-triage/reporters'
+import { formatJson, formatSarif, formatText } from '@i18n-triage/reporters'
 import { cac } from 'cac'
 
 import type { I18nTriageConfig, OutputFormat } from './config'
 import { loadConfigFile, parseOnly, resolveConfig } from './config'
 import { scan } from './scan'
 
-const VERSION = '0.0.0'
+/** 构建时由 tsdown 的 define 注入 package.json 的 version；tsx 直接跑源码时没有这个常量 */
+const VERSION = typeof __VERSION__ === 'string' ? __VERSION__ : '0.0.0-dev'
 
 interface CliOptions {
   format?: string
@@ -21,8 +22,8 @@ interface CliOptions {
 }
 
 function parseFormat(input: string): OutputFormat {
-  if (input === 'text' || input === 'json') return input
-  throw new Error(`未知输出格式 "${input}"，--format 只接受 text | json`)
+  if (input === 'text' || input === 'json' || input === 'sarif') return input
+  throw new Error(`未知输出格式 "${input}"，--format 只接受 text | json | sarif`)
 }
 
 /** 命令行给的目标里哪些是目录：cwd 没有配置文件时，到这些目录里再找一次 */
@@ -57,11 +58,13 @@ async function run(paths: string[], options: CliOptions): Promise<number> {
   const output =
     config.format === 'json'
       ? formatJson(report, { only: config.only })
-      : formatText(report, {
-          only: config.only,
-          color: useColor,
-          dictSiblingThreshold: config.dictSiblingThreshold,
-        })
+      : config.format === 'sarif'
+        ? formatSarif(report, { only: config.only, toolVersion: VERSION })
+        : formatText(report, {
+            only: config.only,
+            color: useColor,
+            dictSiblingThreshold: config.dictSiblingThreshold,
+          })
 
   if (options.out !== undefined) {
     const outPath = path.resolve(cwd, options.out)
@@ -81,7 +84,10 @@ const cli = cac('i18n-triage')
 
 cli
   .command('[...paths]', '扫描目录 / 文件里的硬编码中文，按 A/B/C/D 分类，只把必翻译文案推到你面前')
-  .option('--format <format>', '输出格式：text | json（默认 text）')
+  .option(
+    '--format <format>',
+    '输出格式：text | json | sarif（默认 text；sarif 可直接上传 GitHub Code Scanning）',
+  )
   .option('--only <letters>', '只显示指定类别，如 A,C（默认 A,C；all 为全部）')
   .option('--config <path>', '配置文件路径（默认自动查找 i18n-triage.config.{ts,js,mjs,json}）')
   .option('--out <path>', '把报告写入文件而不是打印到终端')
