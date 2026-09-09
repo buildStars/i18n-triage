@@ -1,6 +1,6 @@
 {
   "name": "i18n-triage",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Find the hard-coded Chinese UI strings in a Vue / TypeScript codebase that actually need translating. AST-based triage into UI text / debug logs / dictionaries / internal keys, with text, JSON and SARIF output.",
   "license": "MIT",
   "author": "neo",

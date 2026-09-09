@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0 (unreleased)
+## 0.3.0 (2026-09-09)
 
 - `i18n-triage locales [paths]`: locale completeness (missing / extra / empty per target locale), dead keys, keys possibly used via a dynamic-call prefix or a matching string literal (route meta, menu configs), and undefined keys with locations; JSON and TS/JS locale modules, flat and `<locale>/<namespace>` layouts; `--source`, `--locale-files`, `--format text|json`, exit 1 as a CI gate; config block `locales`
 - core: `findKeyUsages`, `auditLocales`, `compareLocales`, `flattenMessages`
