@@ -66,7 +66,7 @@ Template expressions get the same treatment: `{{ t('已封盘') }}` is a `call-a
 
 ## Install and use
 
-Not on npm yet. From a clone:
+Not on npm yet. From a clone (building from source needs Node 22.18+ because of tsdown; the published CLI itself runs on Node 20.19+):
 
 ```bash
 pnpm install

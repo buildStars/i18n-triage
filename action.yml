@@ -71,7 +71,7 @@ runs:
         if [ "$code" -eq 2 ]; then echo "::error::i18n-triage failed to run"; exit 2; fi
         if [ "$code" -eq 1 ] && [ "$INPUT_FAIL_ON_PARSE_ERROR" = "true" ]; then echo "::error::some files could not be parsed"; exit 1; fi
         echo "sarif-file=$INPUT_OUTPUT" >> "$GITHUB_OUTPUT"
-        count=$(node -e "const s=require(process.argv[1]); console.log(s.runs[0].properties.summary.byCategory.A_UI_TEXT)" "$INPUT_OUTPUT")
+        count=$(node -e "const s=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')); console.log(s.runs[0].properties.summary.byCategory.A_UI_TEXT)" "$INPUT_OUTPUT")
         echo "ui-text-count=$count" >> "$GITHUB_OUTPUT"
         echo "::notice::i18n-triage: $count hard-coded UI strings (category A)"
 

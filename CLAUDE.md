@@ -160,7 +160,7 @@ kind 判定的关键语义（详表见 `docs/ts-morph-kinds.md`、`docs/vue-temp
 
 - **SARIF**：`reporters/sarif.ts`，`--format sarif`。一类一条 rule（A `warning`，B / C / D `note`），位置 `%SRCROOT%` 相对路径 + `columnKind: utf16CodeUnits`，`partialFingerprints['i18nTriage/v1']` 是 FNV-1a(file, kind, value, attrName, calleeName)，与行号无关。解析失败进 `invocations[0].toolExecutionNotifications`（error），跳过文件进 note。
 - **版本号**：`packages/cli/tsdown.config.ts` 用 `define` 把 package.json 的 version 注入 `__VERSION__`；tsx 直接跑源码时是 `0.0.0-dev`。`--version` 与 SARIF `tool.driver.version` 都用它。
-- **CI**：`.github/workflows/ci.yml`（node 20 / 22：lint → typecheck → test → build → 用产物扫 examples/demo 出 SARIF 并做结构校验）。
+- **CI**：`.github/workflows/ci.yml`。`check` job 在 Node 22 / 24 上 lint → typecheck → test → build → 用产物扫 examples/demo 出 SARIF；`runtime-smoke` job 在 Node 20 / 22 上把打包的 tarball 装进空项目跑 demo。**构建链（tsdown 0.23 / rolldown-plugin-dts）要求 Node ^22.18 || ^24.11，Node 20 不能从源码构建**；发布的包 engines 是 `>=20.19.0`（cac 的要求）。失败时各步骤日志尾部会写进 job summary，公开仓库不登录也能看。测试里不要写只在 Windows 成立的断言（`\` 路径），拉起子进程的用例要给足超时。
 - **可复用 action**：根目录 `action.yml`（composite）：`npx --package @i18n-triage/cli@<version> i18n-triage … --format sarif` → `github/codeql-action/upload-sarif@v3`。**依赖 npm 上有包**，发包前不可用。
 - **npm**：三个包 `0.1.0`，`publishConfig.access: public`；根 `pnpm release:dry` 做打包演练，`pnpm release` 真发（需要先 `npm login`，且 `@i18n-triage` scope 需要在 npm 上建同名 org）。`pnpm pack` 已验证：产物只含 dist + LICENSE + README，manifest 的 main / exports 已切到 dist，装进空项目后 bin 可直接运行。
 - **仓库还没有 remote**；README / action 里的 `OWNER` 占位等仓库发布后替换，SARIF 的 `informationUri` 也等有 URL 再填。

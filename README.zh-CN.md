@@ -66,7 +66,7 @@ i18n-triage  扫描 1,337 个文件
 
 ## 安装与使用
 
-尚未发布到 npm。克隆后：
+尚未发布到 npm。克隆后（从源码构建需要 Node 22.18+，因为 tsdown 的要求；发布出去的 CLI 本身在 Node 20.19+ 上可运行）：
 
 ```bash
 pnpm install
