@@ -69,21 +69,23 @@ i18n-triage  扫描 1,337 个文件
 
 ## 安装与使用
 
-尚未发布到 npm。克隆后（从源码构建需要 Node 22.18+，因为 tsdown 的要求；发布出去的 CLI 本身在 Node 20.19+ 上可运行）：
+已发布到 npm：[`i18n-triage`](https://www.npmjs.com/package/i18n-triage)（Node 20.19+），不用安装直接跑：
 
 ```bash
-pnpm install
-pnpm triage path/to/your/project              # 文本报告，默认显示 A + C
-pnpm triage path/to/your/project --only all   # 四类全部显示
-pnpm triage path/to/your/project --format json --out report.json
+npx i18n-triage src                                   # 文本报告，默认显示 A + C
+npx i18n-triage src --only all                        # 四类全部显示
+npx i18n-triage src --format json --out report.json
+npx i18n-triage src --format sarif --out i18n-triage.sarif
 ```
 
-或者构建独立可执行文件：
+或者装进项目：
 
 ```bash
-pnpm --filter i18n-triage build
-node packages/cli/dist/bin.js path/to/your/project
+pnpm add -D i18n-triage      # npm i -D i18n-triage
+pnpm i18n-triage src
 ```
+
+从本仓库源码运行（构建需要 Node 22.18+，因为 tsdown 的要求）：`pnpm install && pnpm triage path/to/project`。
 
 参数：
 

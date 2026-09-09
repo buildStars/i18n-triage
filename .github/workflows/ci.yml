@@ -85,6 +85,28 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           done
 
+  action-smoke:
+    # 用本仓库的 composite action 本身扫 examples/demo：走 npx 从 npm registry 拉已发布的包，不上传 Code Scanning
+    name: composite action (uses ./)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: triage
+        uses: ./
+        with:
+          paths: examples/demo
+          only: A,C
+          upload: 'false'
+          output: action-smoke.sarif
+      - name: Check outputs
+        run: |
+          test -f "${{ steps.triage.outputs.sarif-file }}"
+          echo "A count from action: ${{ steps.triage.outputs.ui-text-count }}"
+          test "${{ steps.triage.outputs.ui-text-count }}" = "21"
+
   runtime-smoke:
     # 发出去的包声明 Node >= 20.19：在 Node 20 上安装 tarball 并真正跑一遍，不走构建链
     name: install tarball and run (node ${{ matrix.node }})

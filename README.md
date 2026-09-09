@@ -69,21 +69,23 @@ Template expressions get the same treatment: `{{ t('已封盘') }}` is a `call-a
 
 ## Install and use
 
-Not on npm yet. From a clone (building from source needs Node 22.18+ because of tsdown; the published CLI itself runs on Node 20.19+):
+Published on npm as [`i18n-triage`](https://www.npmjs.com/package/i18n-triage) (Node 20.19+). No install needed:
 
 ```bash
-pnpm install
-pnpm triage path/to/your/project              # text report, A + C
-pnpm triage path/to/your/project --only all   # all four buckets
-pnpm triage path/to/your/project --format json --out report.json
+npx i18n-triage src                                   # text report, A + C
+npx i18n-triage src --only all                        # all four buckets
+npx i18n-triage src --format json --out report.json
+npx i18n-triage src --format sarif --out i18n-triage.sarif
 ```
 
-Or build the standalone binary:
+Or add it to a project:
 
 ```bash
-pnpm --filter i18n-triage build
-node packages/cli/dist/bin.js path/to/your/project
+pnpm add -D i18n-triage      # npm i -D i18n-triage
+pnpm i18n-triage src
 ```
+
+From a clone of this repository (building needs Node 22.18+ because of tsdown): `pnpm install && pnpm triage path/to/project`.
 
 Options:
 

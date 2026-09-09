@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-09-09)
 
 First public version of the `i18n-triage` CLI (npm: `i18n-triage`, self-contained — it bundles `@i18n-triage/core` and `@i18n-triage/reporters`, which are published separately later).
 
