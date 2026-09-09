@@ -15,6 +15,8 @@ export interface SourceLocation {
   line: number // 1-based
   column: number // 1-based
   offset: number // 0-based，相对整个文件
+  /** 节点结束位置（0-based，不含），与 offset 同一口径：字面量含引号、文本节点去首尾空白。供 --fix 精确替换 */
+  endOffset?: number
 }
 
 export interface StringNode {

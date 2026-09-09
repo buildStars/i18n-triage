@@ -125,6 +125,41 @@ export default defineConfig({
 
 模式语法：`showToast` 精确 · `console.*` 任一非末尾段 · `*.t` 末尾段 · `*-text` 属性后缀 · `data-*` 属性前缀。
 
+### `--fix`：自动抽 key
+
+```bash
+npx i18n-triage src --fix --dry-run   # 只看会改什么，不写文件
+npx i18n-triage src --fix             # 改写源码 + 写入 src/locales/zh-CN.json
+```
+
+`--fix` 把所有规则命中的 A 类文案换成翻译调用，并把文案写进一份扁平的语言包 JSON（已有条目与嵌套结构保持不变，新 key 追加；跑第二遍是零改动）：
+
+| 位置                                      | 改前                           | 改后                                           |
+| ----------------------------------------- | ------------------------------ | ---------------------------------------------- |
+| 模板文本                                  | `<p>暂无数据</p>`              | `<p>{{ $t('暂无数据') }}</p>`                  |
+| 静态展示属性                              | `placeholder="请输入"`         | `:placeholder="$t('请输入')"`                  |
+| 绑定 / 事件里的字面量                     | `@click="showToast('已封盘')"` | `@click="showToast($t('已封盘'))"`             |
+| `<script setup>` 里的字符串               | `showToast('保存成功')`        | `showToast(t('保存成功'))`，并自动补 `useI18n` |
+| `reactive({ rules: [{ message: '…' }] })` | `message: '供应商不能为空'`    | `message: t('供应商不能为空')`                 |
+
+key 默认就是中文文案本身（`keyStyle: 'text'`）——代码可读、语言包无损；含 vue-i18n 语法字符（`.` `{` `}` `|` `@` `$`）、属性里含引号、或超过 40 字的文案退回稳定的 `k_xxxxxxxx` hash。`keyStyle: 'hash'` 则全部用 hash。语言包里已有相同文案的条目会直接复用它的 key。
+
+有意不动、并在摘要里逐条列出原因的：待确认（fallback）条目，除非 `--include-unsure`；字符串拼接（`'共' + n + '条'`）与模板字符串片段（整句改会破坏语序）；options API 的 `<script>` 和普通 `.ts/.js` 里的字符串，除非配置 `fix.fixPlainScripts` 并指定 `fix.scriptFn`（如 `i18n.global.t`）；JSX。B / C / D 永远不碰。
+
+在完全没有 i18n 的 RuoYi-Vue3 上跑一次：改写 74 个文件、2,361 处文案、1,734 个 key，全部 `.vue` 仍能通过 Vue 编译器，重扫只剩被跳过的 330 处。配置：
+
+```ts
+fix: {
+  keyStyle: 'text',            // 或 'hash'
+  templateFn: '$t',            // 模板里的翻译函数
+  scriptFn: 't',               // 脚本里的翻译函数
+  fixPlainScripts: false,      // 也改写 .ts / .js / options API 的脚本
+  ensureUseI18n: true,         // <script setup> 缺 t 时补 import { useI18n } + const { t } = useI18n()
+  includeUnsure: false,
+  localeFile: 'src/locales/zh-CN.json', // 相对被扫描的目录
+}
+```
+
 ### GitHub Action
 
 仓库根目录的 `action.yml` 是一个 composite action：用 `--format sarif` 跑 CLI，再把结果上传到 GitHub Code Scanning，于是每条硬编码文案都会变成 PR 里的行内注释。

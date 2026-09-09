@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0 (unreleased)
+
+- `--fix` (`--dry-run`, `--include-unsure`, `--locale-file`): rewrites rule-matched A strings into `$t()` / `t()` calls and writes them to a flat locale JSON (existing entries preserved, keys reused, second run is a no-op); adds `useI18n` to `<script setup>` when missing; skips concatenations, template-literal chunks, plain scripts and JSX with a reason; config block `fix` (`keyStyle` text | hash, `templateFn`, `scriptFn`, `fixPlainScripts`, `ensureUseI18n`, `includeUnsure`, `localeFile`)
+- Parsers record `loc.endOffset` for every node
+- Text report: fixed missing space before counts for long file paths
+
 ## 0.1.0 (2026-09-09)
 
 First public version of the `i18n-triage` CLI (npm: `i18n-triage`, self-contained — it bundles `@i18n-triage/core` and `@i18n-triage/reporters`, which are published separately later).

@@ -125,6 +125,41 @@ export default defineConfig({
 
 Pattern syntax: `showToast` exact · `console.*` any non-final segment · `*.t` final segment · `*-text` attribute suffix · `data-*` attribute prefix.
 
+### `--fix`: extract keys automatically
+
+```bash
+npx i18n-triage src --fix --dry-run   # show what would change, write nothing
+npx i18n-triage src --fix             # rewrite sources + write src/locales/zh-CN.json
+```
+
+`--fix` takes every rule-matched A string and turns it into a translation call, then writes the texts into a flat locale JSON (existing entries and nesting are preserved, new keys are appended; a second run is a no-op):
+
+| Where                                     | Before                         | After                                        |
+| ----------------------------------------- | ------------------------------ | -------------------------------------------- |
+| template text                             | `<p>暂无数据</p>`              | `<p>{{ $t('暂无数据') }}</p>`                |
+| static display attribute                  | `placeholder="请输入"`         | `:placeholder="$t('请输入')"`                |
+| literal in a binding / handler            | `@click="showToast('已封盘')"` | `@click="showToast($t('已封盘'))"`           |
+| `<script setup>` string                   | `showToast('保存成功')`        | `showToast(t('保存成功'))` + `useI18n` added |
+| `reactive({ rules: [{ message: '…' }] })` | `message: '供应商不能为空'`    | `message: t('供应商不能为空')`               |
+
+Keys default to the Chinese text itself (`keyStyle: 'text'`) — readable in code and lossless in the locale file; texts containing vue-i18n syntax characters (`.` `{` `}` `|` `@` `$`), quotes inside attributes, or over 40 characters fall back to a stable `k_xxxxxxxx` hash. `keyStyle: 'hash'` uses hashes everywhere. If the locale file already has an entry with the same text, its key is reused.
+
+What it deliberately leaves alone, each listed in the summary with a reason: unsure (fallback) items unless `--include-unsure`; string concatenations (`'共' + n + '条'`) and template-literal chunks (word order would break); strings in options-API `<script>` and plain `.ts/.js` files unless `fix.fixPlainScripts` is on with a `fix.scriptFn` such as `i18n.global.t`; JSX. B / C / D are never touched.
+
+On RuoYi-Vue3 (no i18n at all) one run rewrote 74 files, 2,361 strings and 1,734 keys; every `.vue` file still compiles and a rescan reports only the 330 skipped items. Config:
+
+```ts
+fix: {
+  keyStyle: 'text',            // or 'hash'
+  templateFn: '$t',            // call used in templates
+  scriptFn: 't',               // call used in scripts
+  fixPlainScripts: false,      // also rewrite .ts / .js / options-API scripts
+  ensureUseI18n: true,         // add import { useI18n } + const { t } = useI18n() to <script setup>
+  includeUnsure: false,
+  localeFile: 'src/locales/zh-CN.json', // relative to the scanned directory
+}
+```
+
 ### GitHub Action
 
 `action.yml` at the repository root is a composite action: it runs the CLI with `--format sarif` and uploads the result to GitHub Code Scanning, so every hard-coded string shows up as an inline annotation on the pull request.

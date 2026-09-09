@@ -16,6 +16,36 @@ import { createJiti } from 'jiti'
 
 export type OutputFormat = 'text' | 'json' | 'sarif'
 
+/** `--fix` 的选项（配置文件 `fix` 字段） */
+export interface FixConfig {
+  /** key 生成策略：'text'（默认，中文即 key）| 'hash' */
+  keyStyle?: 'text' | 'hash'
+  /** 模板里的翻译函数，默认 `$t` */
+  templateFn?: string
+  /** 脚本里的翻译函数，默认 `t` */
+  scriptFn?: string
+  /** 也改写非 `<script setup>` 的脚本（options API、.ts / .js），假定 scriptFn 在作用域内；默认 false */
+  fixPlainScripts?: boolean
+  /** `<script setup>` 缺 `t` 时自动补 useI18n，默认 true */
+  ensureUseI18n?: boolean
+  /** 连「待确认」的 A 类也改写，默认 false */
+  includeUnsure?: boolean
+  /** 语言包文件路径，相对被扫描的目录（多目标时取第一个；没有目录目标时相对 cwd），默认 src/locales/zh-CN.json */
+  localeFile?: string
+}
+
+export type ResolvedFixConfig = Required<FixConfig>
+
+export const DEFAULT_FIX_CONFIG: ResolvedFixConfig = {
+  keyStyle: 'text',
+  templateFn: '$t',
+  scriptFn: 't',
+  fixPlainScripts: false,
+  ensureUseI18n: true,
+  includeUnsure: false,
+  localeFile: 'src/locales/zh-CN.json',
+}
+
 /** 用户在 i18n-triage.config.{ts,js,mjs,json} 里写的配置 */
 export interface I18nTriageConfig {
   /** 扫描的 glob，默认 `['**\/*.{vue,ts,js,tsx,jsx}']` */
@@ -44,6 +74,8 @@ export interface I18nTriageConfig {
   only?: string | Category[]
   /** 输出格式，默认 text */
   format?: OutputFormat
+  /** `--fix` 的选项 */
+  fix?: FixConfig
 }
 
 export interface ResolvedConfig {
@@ -55,6 +87,7 @@ export interface ResolvedConfig {
   format: OutputFormat
   dictSiblingThreshold: number
   maxFileSize: number
+  fix: ResolvedFixConfig
 }
 
 export const DEFAULT_INCLUDE: readonly string[] = ['**/*.{vue,ts,js,tsx,jsx}']
@@ -167,7 +200,16 @@ export function resolveConfig(user: I18nTriageConfig = {}): ResolvedConfig {
     format: user.format ?? 'text',
     dictSiblingThreshold: user.dictSiblingThreshold ?? DEFAULT_DICT_SIBLING_THRESHOLD,
     maxFileSize: user.maxFileSize ?? DEFAULT_MAX_FILE_SIZE,
+    fix: { ...DEFAULT_FIX_CONFIG, ...stripUndefined(user.fix ?? {}) },
   }
+}
+
+function stripUndefined<T extends object>(obj: T): Partial<T> {
+  const out: Partial<T> = {}
+  for (const [k, v] of Object.entries(obj)) {
+    if (v !== undefined) (out as Record<string, unknown>)[k] = v
+  }
+  return out
 }
 
 const CONFIG_FILE_NAMES = [

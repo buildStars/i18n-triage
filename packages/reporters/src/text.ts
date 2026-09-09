@@ -119,6 +119,6 @@ function formatDictSection(items: readonly TriageResult[], threshold: number, c:
   for (const r of items) perFile.set(r.node.loc.file, (perFile.get(r.node.loc.file) ?? 0) + 1)
   return [...perFile.entries()].map(
     ([file, count]) =>
-      `  ${padEndDisplay(file, 40)}${fmt(count)} 处${c.dim(`（同一对象内 ≥${threshold} 个中文 value）`)}`,
+      `  ${padEndDisplay(file, 40)}  ${fmt(count)} 处${c.dim(`（同一对象内 ≥${threshold} 个中文 value）`)}`,
   )
 }

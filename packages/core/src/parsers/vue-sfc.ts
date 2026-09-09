@@ -125,9 +125,9 @@ function findBlankSlot(masked: string, from: number, step: 1 | -1): number {
   return -1
 }
 
-function makeLoc(state: WalkState, offset: number): SourceLocation {
+function makeLoc(state: WalkState, offset: number, endOffset: number): SourceLocation {
   const { line, column } = state.lines.locate(offset)
-  return { file: state.file, line, column, offset }
+  return { file: state.file, line, column, offset, endOffset }
 }
 
 function visitChildren(children: TemplateChildNode[], state: WalkState): void {
@@ -168,10 +168,11 @@ function visitText(node: TextNode, state: WalkState): void {
   // content 已被 condense 压缩空白；位置用原始 loc.source 里第一个非空白字符
   const raw = node.loc.source
   const leading = raw.length - raw.trimStart().length
+  const start = node.loc.start.offset + leading
   state.out.push({
     value,
     kind: 'template-text',
-    loc: makeLoc(state, node.loc.start.offset + leading),
+    loc: makeLoc(state, start, start + raw.trim().length),
   })
 }
 
@@ -184,7 +185,7 @@ function visitAttribute(node: AttributeNode, state: WalkState): void {
     value,
     kind: 'template-attr',
     attrName: node.name,
-    loc: makeLoc(state, node.value.loc.start.offset),
+    loc: makeLoc(state, node.value.loc.start.offset, node.value.loc.end.offset),
   })
 }
 
@@ -219,7 +220,7 @@ function visitDirective(node: DirectiveNode, state: WalkState): void {
         value: first.value,
         kind: 'template-attr',
         attrName: staticArg,
-        loc: makeLoc(state, exp.loc.start.offset + first.start),
+        loc: makeLoc(state, exp.loc.start.offset + first.start, exp.loc.start.offset + first.end),
       })
       return
     }

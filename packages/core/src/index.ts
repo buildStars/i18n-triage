@@ -14,3 +14,4 @@ export { createLineIndex } from './utils/line-index'
 
 export * from './parsers'
 export * from './rules'
+export * from './fix'

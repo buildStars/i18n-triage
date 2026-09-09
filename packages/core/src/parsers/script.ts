@@ -108,12 +108,12 @@ function visit(node: Node, state: WalkState): void {
     return
   }
   if (Node.isStringLiteral(node) || Node.isNoSubstitutionTemplateLiteral(node)) {
-    emit(node, node.getLiteralText(), node.getStart(), state)
+    emit(node, node.getLiteralText(), node.getStart(), node.getEnd(), state)
     return
   }
   if (Node.isTemplateHead(node) || Node.isTemplateMiddle(node) || Node.isTemplateTail(node)) {
     const text = node.getLiteralText()
-    if (text.length > 0) emit(node, text, node.getStart(), state)
+    if (text.length > 0) emit(node, text, node.getStart(), node.getEnd(), state)
   }
 }
 
@@ -145,7 +145,11 @@ function visitIdentifier(node: Node, state: WalkState): void {
   }
   if (kind === undefined) return
 
-  const out: StringNode = { value: text, kind, loc: makeLoc(state, node.getStart()) }
+  const out: StringNode = {
+    value: text,
+    kind,
+    loc: makeLoc(state, node.getStart(), node.getEnd()),
+  }
   const calleeName = findEnclosingCalleeName(node)
   if (calleeName !== undefined) out.calleeName = calleeName
   state.out.push(out)
@@ -156,21 +160,28 @@ function visitJsxText(node: Node, state: WalkState): void {
   const value = raw.replace(/\s+/g, ' ').trim()
   if (!containsChinese(value)) return
   const leading = raw.length - raw.trimStart().length
+  const start = node.getStart() + leading
   state.out.push({
     value,
     kind: 'template-text',
-    loc: makeLoc(state, node.getStart() + leading),
+    loc: makeLoc(state, start, start + raw.trim().length),
   })
 }
 
-function emit(literal: Node, value: string, offset: number, state: WalkState): void {
+function emit(
+  literal: Node,
+  value: string,
+  offset: number,
+  endOffset: number,
+  state: WalkState,
+): void {
   if (!containsChinese(value)) return
 
   const expr = climbTransparent(literal)
   const kind = classify(expr)
   if (kind === null) return
 
-  const node: StringNode = { value, kind, loc: makeLoc(state, offset) }
+  const node: StringNode = { value, kind, loc: makeLoc(state, offset, endOffset) }
 
   const calleeName = findEnclosingCalleeName(expr)
   if (calleeName !== undefined) node.calleeName = calleeName
@@ -209,9 +220,9 @@ function owningPropertyName(expr: Node): string | undefined {
   return undefined
 }
 
-function makeLoc(state: WalkState, offset: number): SourceLocation {
+function makeLoc(state: WalkState, offset: number, endOffset: number): SourceLocation {
   const { line, column } = state.lines.locate(offset)
-  return { file: state.file, line, column, offset }
+  return { file: state.file, line, column, offset, endOffset }
 }
 
 // ---------------------------------------------------------------------------

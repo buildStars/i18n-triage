@@ -8,6 +8,7 @@ import { cac } from 'cac'
 
 import type { I18nTriageConfig, OutputFormat } from './config'
 import { loadConfigFile, parseOnly, resolveConfig } from './config'
+import { formatFixSummary, runFix } from './fix'
 import { scan } from './scan'
 
 /** 构建时由 tsdown 的 define 注入 package.json 的 version；tsx 直接跑源码时没有这个常量 */
@@ -20,6 +21,10 @@ interface CliOptions {
   config?: string
   out?: string
   color?: boolean
+  fix?: boolean
+  dryRun?: boolean
+  localeFile?: string
+  includeUnsure?: boolean
 }
 
 function parseFormat(input: string): OutputFormat {
@@ -47,15 +52,29 @@ async function run(paths: string[], options: CliOptions): Promise<number> {
   const overrides: I18nTriageConfig = {}
   if (options.format !== undefined) overrides.format = parseFormat(options.format)
   if (options.only !== undefined) overrides.only = parseOnly(options.only)
-  const config = resolveConfig({ ...loaded?.config, ...overrides })
-
-  const report = await scan(paths, { cwd, config })
+  const fixOverrides = {
+    ...(options.localeFile !== undefined ? { localeFile: options.localeFile } : {}),
+    ...(options.includeUnsure ? { includeUnsure: true } : {}),
+  }
+  const config = resolveConfig({
+    ...loaded?.config,
+    ...overrides,
+    fix: { ...loaded?.config?.fix, ...fixOverrides },
+  })
 
   const useColor =
     options.out === undefined &&
     options.color !== false &&
     process.stdout.isTTY === true &&
     process.env.NO_COLOR === undefined
+
+  if (options.fix) {
+    const summary = await runFix(paths, { cwd, config, dryRun: options.dryRun ?? false })
+    process.stdout.write(formatFixSummary(summary, useColor))
+    return summary.errors.length > 0 ? 1 : 0
+  }
+
+  const report = await scan(paths, { cwd, config })
   const output =
     config.format === 'json'
       ? formatJson(report, { only: config.only })
@@ -97,8 +116,16 @@ cli
   .option('--config <path>', '配置文件路径（默认自动查找 i18n-triage.config.{ts,js,mjs,json}）')
   .option('--out <path>', '把报告写入文件而不是打印到终端')
   .option('--no-color', '关闭终端颜色')
+  .option('--fix', '把 A 类文案抽成 i18n key：改写源码为 $t() / t()，并写入语言包')
+  .option('--dry-run', '配合 --fix：只报告将要做的改动，不写任何文件')
+  .option(
+    '--locale-file <path>',
+    '配合 --fix：语言包路径，相对被扫描目录（默认 src/locales/zh-CN.json）',
+  )
+  .option('--include-unsure', '配合 --fix：连「待确认」的 A 类也一起改写')
   .example('i18n-triage src')
   .example('i18n-triage src --only A --format json --out report.json')
+  .example('i18n-triage src --fix --dry-run')
   .action(async (paths: string[], options: CliOptions) => {
     try {
       process.exitCode = await run(paths, options)

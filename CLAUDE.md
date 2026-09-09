@@ -166,6 +166,18 @@ kind 判定的关键语义（详表见 `docs/ts-morph-kinds.md`、`docs/vue-temp
 - **仓库还没有 remote**；README / action 里的 `OWNER` 占位等仓库发布后替换，SARIF 的 `informationUri` 也等有 URL 再填。
 - 剩余：`--fix` 抽 key、语言包完整度 / 死 key 检测。
 
+## `--fix` 约定（已实现）
+
+- 分层：`core/src/fix/` 只算 `FixPlan`（`planFixes(source, ctx, results, options)` → 编辑列表 + 新增 key + 跳过原因 + `output`），`cli/src/fix.ts` 的 `runFix` 负责读文件、写回、合并语言包 JSON。`applyEdits` 对重叠 / 越界编辑直接抛错。
+- 精确替换依赖解析器新增的 `loc.endOffset`（口径与 offset 一致：字面量含引号，文本节点去首尾空白）。
+- 只处理 `A_UI_TEXT`；`matchedBy === 'fallback'` 默认跳过（`includeUnsure` 才改）。B / C / D 不碰。
+- 上下文：用 compiler-sfc 的 descriptor 判断节点在 template / `<script setup>` / 其他。模板用 `templateFn`（默认 `$t`），setup 用 `scriptFn`（默认 `t`，缺失时在最后一个 import 后插 `import { useI18n } from 'vue-i18n'` + `const { t } = useI18n()`；有 `useI18n()` 但没解构 `t` 则跳过 `no-t-in-scope`），其他脚本默认跳过（`fixPlainScripts` 打开后假定 `scriptFn` 在作用域内，不插 import）。
+- 模板属性里的引号：静态属性保留原外层引号、内层用另一种；表达式字面量沿用它自己的引号；属性上下文里 key 含任何引号就退回 hash（不依赖属性值里的转义）。外层引号靠模板 AST 的属性范围判断，不靠向前扫描。
+- key：`keys.ts` 的 `makeKey`——`text` 风格中文即 key，含 `.{}|@$`、换行、首尾空白或长于 40 字退回 `k_` + FNV-1a；`existingKeys` 里 value 相同则复用其 key（反查表按 Map 大小变化自动重建）。
+- 跳过原因固定为 `unsure` / `concatenation`（相邻非空白字符是 `+`）/ `template-literal`（原文以 `}` 开头或以 `${` 结尾）/ `no-t-in-scope` / `jsx` / `missing-range` / `unsupported`。
+- 幂等：改写后的 `$t()` / `t()` 实参被 `excludeI18nCalls` 剔除，第二遍 `replaced === 0`。`plan.test.ts` 还用 compiler-sfc 验证输出可解析；RuoYi 全量实测 97 个 `.vue` 改写后 0 编译错误。
+- 语言包：扁平 JSON，读取时把嵌套结构压平成 `a.b.c` 供复用，写入时保留原结构、新 key 追加顶层。路径默认 `src/locales/zh-CN.json`，相对第一个目录目标（没有则 cwd）。
+
 ## 测试规范
 
 - **每条规则必须有 fixture 测试**，并有一组专门的**优先级冲突测试**（同时满足两条规则的节点，断言最终分类）。
