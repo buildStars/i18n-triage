@@ -28,6 +28,9 @@ function run(args: string[]): Run {
   return { code: result.status ?? -1, stdout: result.stdout, stderr: result.stderr }
 }
 
+/** 每个用例都要拉起一个 node 进程并用 tsx 即时编译整个 CLI，CI 机器上远不止 vitest 默认的 5 秒 */
+const SLOW = { timeout: 120_000 }
+
 describe('bin.ts — 端到端', () => {
   let out: string
   beforeAll(async () => {
@@ -37,14 +40,14 @@ describe('bin.ts — 端到端', () => {
     await rm(out, { recursive: true, force: true })
   })
 
-  it('prints the text report with the noise-ratio line and exits 0', () => {
+  it('prints the text report with the noise-ratio line and exits 0', SLOW, () => {
     const r = run(['.', '--only', 'all'])
     expect(r.code).toBe(0)
     expect(r.stdout).toContain('降噪比')
     expect(r.stdout).toContain('━━ D 内部键（11）━━')
   })
 
-  it('writes a SARIF 2.1.0 file with --format sarif --out', async () => {
+  it('writes a SARIF 2.1.0 file with --format sarif --out', SLOW, async () => {
     const file = path.join(out, 'report.sarif')
     const r = run(['.', '--format', 'sarif', '--out', file])
     expect(r.code).toBe(0)
@@ -62,19 +65,19 @@ describe('bin.ts — 端到端', () => {
     expect(run0?.properties.summary.byCategory.A_UI_TEXT).toBe(21)
   })
 
-  it('rejects an unknown format with exit code 2', () => {
+  it('rejects an unknown format with exit code 2', SLOW, () => {
     const r = run(['.', '--format', 'bogus'])
     expect(r.code).toBe(2)
     expect(r.stderr).toContain('未知输出格式')
   })
 
-  it('rejects an unknown --only letter with exit code 2', () => {
+  it('rejects an unknown --only letter with exit code 2', SLOW, () => {
     const r = run(['.', '--only', 'A,X'])
     expect(r.code).toBe(2)
     expect(r.stderr).toContain('X')
   })
 
-  it('reports the version', () => {
+  it('reports the version', SLOW, () => {
     const r = run(['--version'])
     expect(r.code).toBe(0)
     expect(r.stdout).toMatch(/^i18n-triage\/\S+/)

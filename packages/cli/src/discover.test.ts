@@ -63,7 +63,13 @@ describe('discoverFiles', () => {
 
 describe('toPosixRelative', () => {
   it('produces forward-slash paths relative to the base', () => {
-    expect(toPosixRelative('C:\\a\\b', 'C:\\a\\b\\src\\x.vue')).toBe('src/x.vue')
     expect(toPosixRelative('/a/b', '/a/b/src/x.vue')).toBe('src/x.vue')
+    expect(toPosixRelative(path.join('a', 'b'), path.join('a', 'b', 'src', 'x.vue'))).toBe(
+      'src/x.vue',
+    )
+  })
+
+  it.runIf(process.platform === 'win32')('normalises Windows backslash paths', () => {
+    expect(toPosixRelative('C:\\a\\b', 'C:\\a\\b\\src\\x.vue')).toBe('src/x.vue')
   })
 })

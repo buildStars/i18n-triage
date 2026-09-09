@@ -30,7 +30,23 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
-      - run: pnpm test
+
+      - name: Test
+        run: |
+          set -o pipefail
+          pnpm test 2>&1 | tee test.log
+
+      # 失败时把测试输出的尾部写进 job summary：公开仓库不登录也能在 run 页面看到
+      - name: Test output (on failure)
+        if: failure()
+        run: |
+          {
+            echo '## pnpm test output (last 200 lines)'
+            echo '```'
+            tail -n 200 test.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - run: pnpm build
 
       # dogfood：用刚构建的 CLI 扫 examples/demo，产出 SARIF 并做最基本的结构校验
