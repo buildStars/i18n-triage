@@ -124,6 +124,17 @@ kind 判定的关键语义（详表见 `docs/ts-morph-kinds.md`、`docs/vue-temp
 - **完全跳过**：注释、import/export/动态 import/require 路径、正则、字符串字面量类型（`type S = '已封盘'`、`Record<'键', X>`）、接口成员名、`declare module '…'`。
 - **位置**：统一指向 AST 节点起点（字符串 → 引号；模板 middle/tail → `}`；文本节点 → 第一个非空白字符），`offset` 相对整个文件，行列由 `utils/line-index.ts` 从 offset 反查。
 
+## 规则层约定（Day 4–5 已定）
+
+- 四条规则都是 `NamedRule = Rule & { ruleName }`，`ruleName` 分别为 `b-debug-log` / `d-internal-key` / `c-dict` / `a-ui-text`，直接写进 `TriageResult.matchedBy`。
+- 需要配置的规则用工厂：`createUiTextRule({ displayAttrs, uiApis })`、`createDebugLogRule({ debugApis })`、`createDictRule({ dictDirs, siblingThreshold })`；传入的列表**整体替换**默认值（不是追加）。`createDefaultRules(config)` 一次构建 `[B, D, C, A]`；`triage(nodes, ctx, rules?)` 签名不变。
+- 被调用者模式语法（`rules/callee-match.ts`）：`showToast` 精确；`console.*` 某个非末尾段等于 console（含 `window.console.log`）；`*.t` 末尾段等于 t 且有接收者。A / B 规则**不看 kind 只看 `calleeName`**，所以 `showToast({ message })` / `console.log({ msg })` 的 object-value 也能命中。
+- 属性白名单匹配前做 kebab-case 归一化（`confirmButtonText` ≡ `confirm-button-text`）。
+- C 规则的路径判定 `isInDictPath`：任意层级目录名命中（`/` 或 `\`，忽略大小写），**或文件名就是字典名**（`src/constants.ts`）。
+- **已接入 i18n 的调用不是一个 Category**：`excludeI18nCalls(nodes)` 在 `triage` 之前把 `t` / `$t` / `*.t` / `tc` … 的实参剔掉（`DEFAULT_I18N_CALLEES`）。CLI 的调用链固定为 `parseSource → excludeI18nCalls → triage`，剔除数单独计入报告。
+- **fallback 语义**：所有规则都不命中 → `A_UI_TEXT` + `matchedBy: 'fallback'`。因此 A 类有两档：规则命中（高置信）与 fallback（待确认，如非白名单属性、裸 literal、未知调用的实参）。报告应区分展示这两档，不要混在一起。
+- 端到端断言见 `rules/integration.test.ts`：同一份 options 列表在 `constants/` 下是 C、在 `views/` 下是 A（fallback）。
+
 ## 测试规范
 
 - **每条规则必须有 fixture 测试**，并有一组专门的**优先级冲突测试**（同时满足两条规则的节点，断言最终分类）。
@@ -156,7 +167,7 @@ pnpm --filter @i18n-triage/cli dev <dir>   # 直接跑 CLI 源码
 | Day 1   | 仓库骨架 + CLAUDE.md + 核心类型 + smoke 测试                                      | ✅   |
 | Day 2   | `parsers/vue-sfc.ts`（先产出 NodeTypes 对照表到 `docs/vue-template-ast.md`）      | ✅   |
 | Day 3   | `parsers/script.ts`（先产出 ts-morph 判定表到 `docs/ts-morph-kinds.md`）          | ✅   |
-| Day 4-5 | `rules/` 四条规则 + engine + defaults + 优先级测试                                | ⬜   |
+| Day 4-5 | `rules/` 四条规则 + engine + defaults + 优先级测试                                | ✅   |
 | Day 6   | cli + text/json reporter + `examples/demo`                                        | ⬜   |
 | Day 7   | 跑真实开源项目、统计准确率、README                                                | ⬜   |
 | 后续    | SARIF reporter、`--fix` 抽 key、语言包完整度 / 死 key 检测、GitHub Action、发 npm | ⬜   |

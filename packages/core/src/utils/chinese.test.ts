@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { CHINESE_RE, containsChinese } from './chinese'
+import { CHINESE_RE, containsChinese, countChineseRuns } from './chinese'
 
 describe('containsChinese', () => {
   it('returns true for a string of CJK ideographs', () => {
@@ -25,6 +25,24 @@ describe('containsChinese', () => {
 
   it('detects CJK Unified Ideographs Extension A', () => {
     expect(containsChinese('㐀')).toBe(true)
+  })
+})
+
+describe('countChineseRuns', () => {
+  it('counts maximal runs of consecutive Chinese characters, the way a regex grep would flag them', () => {
+    expect(countChineseRuns('暂无数据')).toBe(1)
+    expect(countChineseRuns('订单 #123 已完成')).toBe(2)
+    expect(countChineseRuns('// 注释：加载失败\nshowToast("已封盘")')).toBe(3)
+  })
+
+  it('returns 0 when there is no Chinese', () => {
+    expect(countChineseRuns('')).toBe(0)
+    expect(countChineseRuns('hello，world！')).toBe(0)
+  })
+
+  it('is stateless across calls', () => {
+    expect(countChineseRuns('中')).toBe(1)
+    expect(countChineseRuns('中')).toBe(1)
   })
 })
 
