@@ -1,0 +1,83 @@
+name: i18n-triage
+description: Find hard-coded Chinese UI text with AST-based triage and upload the result to GitHub Code Scanning as SARIF.
+author: neo
+
+branding:
+  icon: globe
+  color: orange
+
+inputs:
+  paths:
+    description: Directories or files to scan, space-separated. Relative to the repository root.
+    required: false
+    default: .
+  only:
+    description: Categories to report, e.g. "A,C" or "all".
+    required: false
+    default: A,C
+  config:
+    description: Path to an i18n-triage config file. Defaults to auto-discovery in the repository root and the scanned directories.
+    required: false
+    default: ''
+  output:
+    description: Where to write the SARIF file.
+    required: false
+    default: i18n-triage.sarif
+  upload:
+    description: 'Upload the SARIF file to GitHub Code Scanning (the job needs the permission security-events: write).'
+    required: false
+    default: 'true'
+  category:
+    description: Code Scanning category, so several analyses can coexist on one commit.
+    required: false
+    default: i18n-triage
+  version:
+    description: npm version of @i18n-triage/cli to run.
+    required: false
+    default: latest
+  fail-on-parse-error:
+    description: Fail the step when some files could not be parsed (the CLI exits 1 in that case).
+    required: false
+    default: 'false'
+
+outputs:
+  sarif-file:
+    description: Path of the generated SARIF file.
+    value: ${{ steps.scan.outputs.sarif-file }}
+  ui-text-count:
+    description: Number of A (must-translate UI text) results.
+    value: ${{ steps.scan.outputs.ui-text-count }}
+
+runs:
+  using: composite
+  steps:
+    - name: Run i18n-triage
+      id: scan
+      shell: bash
+      env:
+        INPUT_PATHS: ${{ inputs.paths }}
+        INPUT_ONLY: ${{ inputs.only }}
+        INPUT_CONFIG: ${{ inputs.config }}
+        INPUT_OUTPUT: ${{ inputs.output }}
+        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_FAIL_ON_PARSE_ERROR: ${{ inputs.fail-on-parse-error }}
+      run: |
+        set +e
+        args=($INPUT_PATHS --only "$INPUT_ONLY" --format sarif --out "$INPUT_OUTPUT")
+        if [ -n "$INPUT_CONFIG" ]; then args+=(--config "$INPUT_CONFIG"); fi
+        npx --yes --package "@i18n-triage/cli@$INPUT_VERSION" i18n-triage "${args[@]}"
+        code=$?
+        set -e
+        if [ "$code" -eq 2 ]; then echo "::error::i18n-triage failed to run"; exit 2; fi
+        if [ "$code" -eq 1 ] && [ "$INPUT_FAIL_ON_PARSE_ERROR" = "true" ]; then echo "::error::some files could not be parsed"; exit 1; fi
+        echo "sarif-file=$INPUT_OUTPUT" >> "$GITHUB_OUTPUT"
+        count=$(node -e "const s=require(process.argv[1]); console.log(s.runs[0].properties.summary.byCategory.A_UI_TEXT)" "$INPUT_OUTPUT")
+        echo "ui-text-count=$count" >> "$GITHUB_OUTPUT"
+        echo "::notice::i18n-triage: $count hard-coded UI strings (category A)"
+
+    - name: Upload SARIF to Code Scanning
+      if: inputs.upload == 'true'
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.output }}
+        category: ${{ inputs.category }}

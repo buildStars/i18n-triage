@@ -120,6 +120,29 @@ export default defineConfig({
 
 模式语法：`showToast` 精确 · `console.*` 任一非末尾段 · `*.t` 末尾段 · `*-text` 属性后缀 · `data-*` 属性前缀。
 
+### GitHub Action
+
+仓库根目录的 `action.yml` 是一个 composite action：用 `--format sarif` 跑 CLI，再把结果上传到 GitHub Code Scanning，于是每条硬编码文案都会变成 PR 里的行内注释。
+
+```yaml
+# .github/workflows/i18n.yml
+on: [pull_request]
+permissions:
+  contents: read
+  security-events: write
+jobs:
+  i18n-triage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: OWNER/i18n-triage@v0.1.0 # 仓库发布后把 OWNER 换成实际的用户 / 组织名
+        with:
+          paths: src
+          only: A,C
+```
+
+输入：`paths`、`only`、`config`、`output`、`upload`、`category`、`version`（`@i18n-triage/cli` 的 npm 版本）、`fail-on-parse-error`。输出：`sarif-file`、`ui-text-count`。
+
 ## 架构
 
 ```

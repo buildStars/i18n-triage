@@ -120,6 +120,29 @@ export default defineConfig({
 
 Pattern syntax: `showToast` exact · `console.*` any non-final segment · `*.t` final segment · `*-text` attribute suffix · `data-*` attribute prefix.
 
+### GitHub Action
+
+`action.yml` at the repository root is a composite action: it runs the CLI with `--format sarif` and uploads the result to GitHub Code Scanning, so every hard-coded string shows up as an inline annotation on the pull request.
+
+```yaml
+# .github/workflows/i18n.yml
+on: [pull_request]
+permissions:
+  contents: read
+  security-events: write
+jobs:
+  i18n-triage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: OWNER/i18n-triage@v0.1.0 # replace OWNER once the repository is published
+        with:
+          paths: src
+          only: A,C
+```
+
+Inputs: `paths`, `only`, `config`, `output`, `upload`, `category`, `version` (npm version of `@i18n-triage/cli`), `fail-on-parse-error`. Outputs: `sarif-file`, `ui-text-count`.
+
 ## Architecture
 
 ```
