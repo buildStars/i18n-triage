@@ -135,7 +135,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: OWNER/i18n-triage@v0.1.0 # 仓库发布后把 OWNER 换成实际的用户 / 组织名
+      - uses: buildStars/i18n-triage@v0.1.0
         with:
           paths: src
           only: A,C

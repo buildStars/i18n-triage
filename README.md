@@ -135,7 +135,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: OWNER/i18n-triage@v0.1.0 # replace OWNER once the repository is published
+      - uses: buildStars/i18n-triage@v0.1.0
         with:
           paths: src
           only: A,C

@@ -12,6 +12,7 @@ import { scan } from './scan'
 
 /** 构建时由 tsdown 的 define 注入 package.json 的 version；tsx 直接跑源码时没有这个常量 */
 const VERSION = typeof __VERSION__ === 'string' ? __VERSION__ : '0.0.0-dev'
+const INFORMATION_URI = 'https://github.com/buildStars/i18n-triage'
 
 interface CliOptions {
   format?: string
@@ -59,7 +60,11 @@ async function run(paths: string[], options: CliOptions): Promise<number> {
     config.format === 'json'
       ? formatJson(report, { only: config.only })
       : config.format === 'sarif'
-        ? formatSarif(report, { only: config.only, toolVersion: VERSION })
+        ? formatSarif(report, {
+            only: config.only,
+            toolVersion: VERSION,
+            informationUri: INFORMATION_URI,
+          })
         : formatText(report, {
             only: config.only,
             color: useColor,

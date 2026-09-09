@@ -14,6 +14,15 @@
     "localization",
     "sarif"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/buildStars/i18n-triage.git",
+    "directory": "packages/reporters"
+  },
+  "homepage": "https://github.com/buildStars/i18n-triage#readme",
+  "bugs": {
+    "url": "https://github.com/buildStars/i18n-triage/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "main": "./src/index.ts",
