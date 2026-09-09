@@ -32,7 +32,7 @@ inputs:
     required: false
     default: i18n-triage
   version:
-    description: npm version of @i18n-triage/cli to run.
+    description: npm version of the i18n-triage CLI package to run.
     required: false
     default: latest
   fail-on-parse-error:
@@ -65,7 +65,7 @@ runs:
         set +e
         args=($INPUT_PATHS --only "$INPUT_ONLY" --format sarif --out "$INPUT_OUTPUT")
         if [ -n "$INPUT_CONFIG" ]; then args+=(--config "$INPUT_CONFIG"); fi
-        npx --yes --package "@i18n-triage/cli@$INPUT_VERSION" i18n-triage "${args[@]}"
+        npx --yes "i18n-triage@$INPUT_VERSION" "${args[@]}"
         code=$?
         set -e
         if [ "$code" -eq 2 ]; then echo "::error::i18n-triage failed to run"; exit 2; fi

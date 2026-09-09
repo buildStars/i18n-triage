@@ -2,7 +2,7 @@
 
 ## 0.1.0 (unreleased)
 
-First public version of `@i18n-triage/core`, `@i18n-triage/reporters` and `@i18n-triage/cli`.
+First public version of the `i18n-triage` CLI (npm: `i18n-triage`, self-contained — it bundles `@i18n-triage/core` and `@i18n-triage/reporters`, which are published separately later).
 
 - AST-based classification of hard-coded Chinese strings into A (UI text), B (debug logs), C (dictionaries), D (internal keys); comments, styles, import paths, regexes and string literal types never enter the pipeline
 - `.vue` templates via `@vue/compiler-sfc`; `<script>` blocks and template expressions via `ts-morph`, all with whole-file positions

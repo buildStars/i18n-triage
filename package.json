@@ -14,8 +14,9 @@
     "triage": "tsx packages/cli/src/bin.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "release": "pnpm build && pnpm -r --filter \"./packages/*\" publish --access public",
-    "release:dry": "pnpm build && pnpm -r --filter \"./packages/*\" publish --access public --dry-run --no-git-checks"
+    "release": "pnpm build && pnpm --filter i18n-triage publish --access public",
+    "release:dry": "pnpm build && pnpm --filter i18n-triage publish --access public --dry-run --no-git-checks",
+    "release:libs": "pnpm build && pnpm --filter @i18n-triage/core --filter @i18n-triage/reporters publish --access public"
   },
   "devDependencies": {
     "@i18n-triage/eslint-config": "workspace:*",

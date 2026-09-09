@@ -57,7 +57,7 @@ jobs:
 
       - name: Pack CLI tarball
         if: matrix.node == 22
-        run: pnpm --filter @i18n-triage/cli pack --pack-destination "$GITHUB_WORKSPACE/artifacts"
+        run: pnpm --filter i18n-triage pack --pack-destination "$GITHUB_WORKSPACE/artifacts"
 
       - uses: actions/upload-artifact@v4
         if: matrix.node == 22

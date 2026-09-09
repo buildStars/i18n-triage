@@ -134,7 +134,7 @@ src/views/system/sms/channel/index.vue:49               template-text           
 
 ```bash
 # 在仓库根目录
-pnpm install && pnpm --filter @i18n-triage/cli build
+pnpm install && pnpm --filter i18n-triage build
 
 git clone --depth 1 https://github.com/vbenjs/vue-vben-admin.git /tmp/vben
 node packages/cli/dist/bin.js /tmp/vben --only all --format json --out /tmp/vben.json

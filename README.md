@@ -81,7 +81,7 @@ pnpm triage path/to/your/project --format json --out report.json
 Or build the standalone binary:
 
 ```bash
-pnpm --filter @i18n-triage/cli build
+pnpm --filter i18n-triage build
 node packages/cli/dist/bin.js path/to/your/project
 ```
 
@@ -103,7 +103,7 @@ Exit code is 1 when some files failed to parse (they are listed at the end of th
 
 ```ts
 // i18n-triage.config.ts
-import { defineConfig } from '@i18n-triage/cli'
+import { defineConfig } from 'i18n-triage'
 
 export default defineConfig({
   // Lists are appended to the built-in defaults; set extendDefaults: false to replace them.
@@ -144,7 +144,7 @@ jobs:
           only: A,C
 ```
 
-Inputs: `paths`, `only`, `config`, `output`, `upload`, `category`, `version` (npm version of `@i18n-triage/cli`), `fail-on-parse-error`. Outputs: `sarif-file`, `ui-text-count`.
+Inputs: `paths`, `only`, `config`, `output`, `upload`, `category`, `version` (npm version of `i18n-triage`), `fail-on-parse-error`. Outputs: `sarif-file`, `ui-text-count`.
 
 ## Architecture
 
@@ -156,7 +156,7 @@ Inputs: `paths`, `only`, `config`, `output`, `upload`, `category`, `version` (np
                  │  expression─┘   (kind · calleeName · attrName · siblingChineseCount · loc)       │
                  └───────────────────────────────────────────────────────────────────────────────────┘
                           ▲                                                              │
-   @i18n-triage/cli       │ readFile                                                     ▼
+   i18n-triage (cli)      │ readFile                                                     ▼
    discover (glob) ───────┘                                    @i18n-triage/reporters: buildScanReport → text | json
 ```
 

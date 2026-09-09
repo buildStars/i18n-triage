@@ -81,7 +81,7 @@ pnpm triage path/to/your/project --format json --out report.json
 或者构建独立可执行文件：
 
 ```bash
-pnpm --filter @i18n-triage/cli build
+pnpm --filter i18n-triage build
 node packages/cli/dist/bin.js path/to/your/project
 ```
 
@@ -103,7 +103,7 @@ i18n-triage [...paths]
 
 ```ts
 // i18n-triage.config.ts
-import { defineConfig } from '@i18n-triage/cli'
+import { defineConfig } from 'i18n-triage'
 
 export default defineConfig({
   // 各列表默认追加到内置白名单之后；extendDefaults: false 则整体替换
@@ -144,7 +144,7 @@ jobs:
           only: A,C
 ```
 
-输入：`paths`、`only`、`config`、`output`、`upload`、`category`、`version`（`@i18n-triage/cli` 的 npm 版本）、`fail-on-parse-error`。输出：`sarif-file`、`ui-text-count`。
+输入：`paths`、`only`、`config`、`output`、`upload`、`category`、`version`（`i18n-triage` 的 npm 版本）、`fail-on-parse-error`。输出：`sarif-file`、`ui-text-count`。
 
 ## 架构
 
@@ -156,7 +156,7 @@ jobs:
                  │  expression─┘   (kind · calleeName · attrName · siblingChineseCount · loc)       │
                  └───────────────────────────────────────────────────────────────────────────────────┘
                           ▲                                                              │
-   @i18n-triage/cli       │ readFile                                                     ▼
+   i18n-triage (cli)      │ readFile                                                     ▼
    discover（glob）───────┘                                    @i18n-triage/reporters: buildScanReport → text | json
 ```
 
