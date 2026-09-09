@@ -19,6 +19,12 @@ export interface ReportError {
   message: string
 }
 
+/** 被判定为压缩 / 生成产物而未扫描的文件 */
+export interface SkippedFile {
+  file: string
+  reason: 'minified' | 'too-large'
+}
+
 export type CategoryCounts = Record<Category, number>
 
 export interface ScanSummary {
@@ -42,6 +48,7 @@ export interface ScanReport {
   /** 全部结果，按文件路径、offset 排序 */
   results: TriageResult[]
   errors: ReportError[]
+  skipped: SkippedFile[]
 }
 
 function emptyCounts(): CategoryCounts {
@@ -53,6 +60,7 @@ function emptyCounts(): CategoryCounts {
 export function buildScanReport(
   files: readonly FileScan[],
   errors: readonly ReportError[] = [],
+  skipped: readonly SkippedFile[] = [],
 ): ScanReport {
   const byCategory = emptyCounts()
   let naive = 0
@@ -93,5 +101,6 @@ export function buildScanReport(
     },
     results,
     errors: [...errors],
+    skipped: [...skipped],
   }
 }

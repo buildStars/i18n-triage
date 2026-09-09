@@ -135,6 +135,17 @@ kind 判定的关键语义（详表见 `docs/ts-morph-kinds.md`、`docs/vue-temp
 - **fallback 语义**：所有规则都不命中 → `A_UI_TEXT` + `matchedBy: 'fallback'`。因此 A 类有两档：规则命中（高置信）与 fallback（待确认，如非白名单属性、裸 literal、未知调用的实参）。报告应区分展示这两档，不要混在一起。
 - 端到端断言见 `rules/integration.test.ts`：同一份 options 列表在 `constants/` 下是 C、在 `views/` 下是 A（fallback）。
 
+## Day 7 真实项目验证带来的调整（vben / element-plus-admin / yudao / RuoYi，详见 `docs/validation.md`）
+
+- **object-value 带 `attrName`（所属属性名）**：`{ label: 'x' }` → `attrName: 'label'`，数组属性的元素归到该属性。A 规则据此把 `{ label / message / title / placeholder }` 判为规则命中的 A（reactive 表单校验 `message`、options 列表 `label` 不再是待确认）。
+- **属性名模式**（`rules/callee-match.ts` 的 `matchesAttrName`）：精确 / `*-text` 后缀 / `data-*` 前缀，匹配前 kebab-case 归一化。展示属性默认含 `*-text` `*-title` `*-placeholder` `*-tooltip` `*-label` `*-description` `*-message` `*-tip(s)` `*-help` `*-hint` `*-content` 等后缀。
+- **D 规则新增「非展示属性」**：`id` `class` `key` `ref` `name` `fill` `stroke` `d` `href` `src` `style` `data-*` …（`DEFAULT_INTERNAL_ATTRS`，`createInternalKeyRule({ internalAttrs })`）。设计工具导出的 SVG 组件把图层名写进 `id="矩形"`，埋点写在 `data-track`，这些是 D 不是 A。顺序仍是 `[B, D, C, A]`，所以内部属性列表里**不能**放展示属性（如 `aria-label`）。
+- **callee 的 `X[]` 视同 `X.*`**：`notification[type]({ message })` 能被 `notification.*` 命中。
+- **UI API / 字典目录扩充**：`h`、`$modal.*`、`*.$modal`（RuoYi）、`notification(.*)`、`Modal(.*)`、`modal.*`、`dialog.*`、TDesign 的 `MessagePlugin.*` 等；字典目录加 `consts` / `const`。
+- **CLI 默认排除翻译表、mock、测试、产物**：`**/locales/**` `**/locale/**` `**/lang(s)/**` `**/i18n/**` `**/translations/**` `**/translate/**` `**/zh-CN.*` `**/zh.*` …、`**/mock(s)/**` `**/__mocks__/**` `**/__tests__/**` `**/*.test.*` `**/*.spec.*`、`**/*.min.js` `**/*.umd.js` `**/*.d.ts`。element-plus-admin 里 92 处 A 有 87 处来自 `locales/zh-CN.ts`——翻译表是翻译的目标，不是硬编码来源。
+- **跳过压缩 / 超大文件**：任一行 > 5000 字符 → `minified`；整体 > `maxFileSize`（默认 300 KB）→ `too-large`。记入 `report.skipped`，文本报告摘要有一行「跳过疑似压缩 / 生成文件 N 个」并在文末列出。
+- **`relativePath` 基准按目标选**：目标在 cwd 之下 → 相对 cwd；否则相对目标目录本身；显式文件相对其所在目录。永远不出现 `../`。
+
 ## CLI 与报告层约定（Day 6 已定）
 
 - `@i18n-triage/cli`：`src/bin.ts` 是可执行入口（`cac`），`src/index.ts` 是库入口（`defineConfig` / `scan` / `resolveConfig` / `loadConfigFile`）。根目录 `pnpm triage <dir>`（= `tsx packages/cli/src/bin.ts`，在仓库根目录下运行）直接跑源码；`pnpm --filter @i18n-triage/cli dev` 的 cwd 是 `packages/cli`，相对路径会从那里算。CLI 产物用 tsdown 把 core / reporters 打进 `dist/`（`deps.alwaysBundle`），因此 core 的第三方运行时依赖必须同时列在 cli 的 `dependencies` 里，否则会被一并打包进产物。

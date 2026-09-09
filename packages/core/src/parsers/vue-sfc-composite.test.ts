@@ -75,7 +75,7 @@ const a = '第二块'
 <template><div>模板</div></template>`
     const nodes = parseVueSfc(src, ctx)
     expect(pick(nodes)).toEqual([
-      { value: '组件名', kind: 'object-value' },
+      { value: '组件名', kind: 'object-value', attrName: 'name' },
       { value: '第二块', kind: 'literal' },
       { value: '模板', kind: 'template-text' },
     ])
@@ -96,7 +96,9 @@ export default defineComponent({ render: () => <p title="属性">文本</p> })
     const src = `<script>
 export default { data() { return { msg: '普通脚本' } } }
 </script>`
-    expect(pick(parseVueSfc(src, ctx))).toEqual([{ value: '普通脚本', kind: 'object-value' }])
+    expect(pick(parseVueSfc(src, ctx))).toEqual([
+      { value: '普通脚本', kind: 'object-value', attrName: 'msg' },
+    ])
   })
 
   it('returns an empty array for an SFC with neither template nor script content', () => {

@@ -14,7 +14,8 @@
 | `src/components/Tip.tsx` | JSX 文本与属性                                                                                                                  |
 | `node_modules/` `dist/`  | 默认排除，里面的中文不应出现                                                                                                    |
 
-期望结果（`packages/cli/src/scan.test.ts` 以此为断言）：6 个文件，A 22（其中 5 处待确认）/ B 8 / C 13 / D 10，剔除 i18n 调用 2 处。
+期望结果（`packages/cli/src/scan.test.ts` 以此为断言）：6 个文件，A 21（其中 3 处待确认）/ B 8 / C 13 / D 11，剔除 i18n 调用 2 处。
+（`data-track` 属性归 D；`{ text: '无备注' }` 因属性名是展示 prop 而成为规则命中的 A。）
 
 在仓库根目录运行（`demo/i18n-triage.config.mjs` 会被自动发现）：
 

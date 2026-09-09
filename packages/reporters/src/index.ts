@@ -10,7 +10,14 @@ export {
   DEFAULT_ONLY,
 } from './categories'
 export { charWidth, displayWidth, padEndDisplay, truncateDisplay } from './display-width'
-export type { CategoryCounts, FileScan, ReportError, ScanReport, ScanSummary } from './report-model'
+export type {
+  CategoryCounts,
+  FileScan,
+  ReportError,
+  ScanReport,
+  ScanSummary,
+  SkippedFile,
+} from './report-model'
 export { buildScanReport } from './report-model'
 export type { TextReporterOptions } from './text'
 export { formatText } from './text'

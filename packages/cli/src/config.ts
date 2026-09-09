@@ -8,6 +8,7 @@ import {
   DEFAULT_DICT_SIBLING_THRESHOLD,
   DEFAULT_DISPLAY_ATTRS,
   DEFAULT_I18N_CALLEES,
+  DEFAULT_INTERNAL_ATTRS,
   DEFAULT_UI_APIS,
 } from '@i18n-triage/core'
 import { CATEGORIES, CATEGORY_BY_LETTER, DEFAULT_ONLY } from '@i18n-triage/reporters'
@@ -33,8 +34,12 @@ export interface I18nTriageConfig {
   dictSiblingThreshold?: number
   /** 已接入 i18n 的调用，实参整体剔除 */
   i18nCallees?: string[]
+  /** D：值永远不是文案的模板属性（id / fill / data-* …） */
+  internalAttrs?: string[]
   /** true（默认）：上面各列表追加到内置白名单之后；false：整体替换 */
   extendDefaults?: boolean
+  /** 超过多少字节的文件视为生成物跳过，默认 300000 */
+  maxFileSize?: number
   /** 只显示哪些类别：'A,C' 这样的字母串，或 Category 数组；默认 A,C */
   only?: string | Category[]
   /** 输出格式，默认 text */
@@ -49,15 +54,54 @@ export interface ResolvedConfig {
   only: Category[]
   format: OutputFormat
   dictSiblingThreshold: number
+  maxFileSize: number
 }
 
 export const DEFAULT_INCLUDE: readonly string[] = ['**/*.{vue,ts,js,tsx,jsx}']
+
+/**
+ * 默认排除。除了构建 / 依赖目录，还有 Day 7 在真实项目上验证出的三类噪音源：
+ * - 翻译表本身（locales/、zh-CN.ts、bpmn 的 translate/zh.js）——它们是翻译的目标，不是硬编码来源
+ * - mock 数据与测试（`it('应该…')` 的描述不是 UI 文案）
+ * - 压缩 / 打包产物（`*.min.js`、`*.umd.js`）与类型声明
+ */
 export const DEFAULT_IGNORE: readonly string[] = [
   '**/node_modules/**',
   '**/dist/**',
   '**/.git/**',
   '**/coverage/**',
+  // 翻译表
+  '**/locales/**',
+  '**/locale/**',
+  '**/lang/**',
+  '**/langs/**',
+  '**/i18n/**',
+  '**/translations/**',
+  '**/translate/**',
+  '**/zh-CN.*',
+  '**/zh_CN.*',
+  '**/zh-cn.*',
+  '**/zh-Hans.*',
+  '**/zh-TW.*',
+  '**/zh-HK.*',
+  '**/zh.*',
+  // mock / 测试
+  '**/mock/**',
+  '**/mocks/**',
+  '**/__mocks__/**',
+  '**/__tests__/**',
+  '**/*.test.*',
+  '**/*.spec.*',
+  // 产物
+  '**/*.min.js',
+  '**/*.umd.js',
+  '**/*.umd.cjs',
+  '**/*.iife.js',
+  '**/*.d.ts',
 ]
+
+/** 超过这个字节数的文件视为生成物，跳过不扫（yudao 里 vendored 的 Tinyflow 打包产物 506 KB） */
+export const DEFAULT_MAX_FILE_SIZE = 300_000
 
 /** 仅用于给配置文件提供类型提示 */
 export function defineConfig(config: I18nTriageConfig): I18nTriageConfig {
@@ -101,6 +145,8 @@ export function resolveConfig(user: I18nTriageConfig = {}): ResolvedConfig {
   if (debugApis) rulesConfig.debugApis = debugApis
   const dictDirs = merge(DEFAULT_DICT_DIRS, user.dictDirs)
   if (dictDirs) rulesConfig.dictDirs = dictDirs
+  const internalAttrs = merge(DEFAULT_INTERNAL_ATTRS, user.internalAttrs)
+  if (internalAttrs) rulesConfig.internalAttrs = internalAttrs
   if (user.dictSiblingThreshold !== undefined) {
     rulesConfig.dictSiblingThreshold = user.dictSiblingThreshold
   }
@@ -120,6 +166,7 @@ export function resolveConfig(user: I18nTriageConfig = {}): ResolvedConfig {
     only,
     format: user.format ?? 'text',
     dictSiblingThreshold: user.dictSiblingThreshold ?? DEFAULT_DICT_SIBLING_THRESHOLD,
+    maxFileSize: user.maxFileSize ?? DEFAULT_MAX_FILE_SIZE,
   }
 }
 

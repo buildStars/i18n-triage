@@ -11,9 +11,10 @@ export {
   DEFAULT_DICT_SIBLING_THRESHOLD,
   DEFAULT_DISPLAY_ATTRS,
   DEFAULT_I18N_CALLEES,
+  DEFAULT_INTERNAL_ATTRS,
   DEFAULT_UI_APIS,
 } from './defaults'
-export { matchesCallee, toKebabCase } from './callee-match'
+export { matchesAttrName, matchesCallee, toKebabCase } from './callee-match'
 
 export type { UiTextOptions } from './a-ui-text'
 export { aUiTextRule, createUiTextRule } from './a-ui-text'
@@ -21,7 +22,8 @@ export type { DebugLogOptions } from './b-debug-log'
 export { bDebugLogRule, createDebugLogRule } from './b-debug-log'
 export type { DictOptions } from './c-dict'
 export { cDictRule, createDictRule, isInDictPath } from './c-dict'
-export { dInternalKeyRule } from './d-internal-key'
+export type { InternalKeyOptions } from './d-internal-key'
+export { createInternalKeyRule, dInternalKeyRule } from './d-internal-key'
 
 export type { RulesConfig } from './engine'
 export {

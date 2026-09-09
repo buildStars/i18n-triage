@@ -52,6 +52,11 @@ export function formatText(report: ScanReport, options: TextReporterOptions = {}
     `  ${label('已接入 i18n 的调用')}${num(summary.i18nExcluded)} 处  ${c.dim('（t / $t，已排除）')}`,
   )
   lines.push(`  ${label('注释等已忽略')}${num(summary.ignored)} 处`)
+  if (report.skipped.length > 0) {
+    lines.push(
+      `  ${label('跳过疑似压缩 / 生成文件')}${num(report.skipped.length)} 个  ${c.dim('（见文末）')}`,
+    )
+  }
   lines.push('')
   const pct = (summary.noiseRatio * 100).toFixed(1)
   lines.push(
@@ -71,7 +76,11 @@ export function formatText(report: ScanReport, options: TextReporterOptions = {}
     }
   }
 
-  // ---- 解析失败 ----
+  // ---- 跳过 / 解析失败 ----
+  if (report.skipped.length > 0) {
+    lines.push('', c.bold(`━━ 已跳过（${fmt(report.skipped.length)}）━━`))
+    for (const s of report.skipped) lines.push(`  ${padEndDisplay(s.file, 40)}${c.dim(s.reason)}`)
+  }
   if (errors.length > 0) {
     lines.push('', c.bold(c.red(`━━ 解析失败（${fmt(errors.length)}）━━`)))
     for (const e of errors) lines.push(`  ${e.file}  ${c.dim(e.message)}`)

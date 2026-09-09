@@ -181,9 +181,32 @@ function emit(literal: Node, value: string, offset: number, state: WalkState): v
   }
   if (kind === 'object-value') {
     node.siblingChineseCount = countSiblingChinese(expr, state)
+    const propertyName = owningPropertyName(expr)
+    if (propertyName !== undefined) node.attrName = propertyName
   }
 
   state.out.push(node)
+}
+
+/**
+ * object-value 所属的属性名：`{ label: 'x' }` → label，`{ 'msg': 'x' }` → msg，`{ 123: 'x' }` → 123，
+ * `{ tags: ['x'] }` 的元素 → tags。计算属性名（`[KEY]: 'x'`）除非是字符串字面量，否则不填。
+ */
+function owningPropertyName(expr: Node): string | undefined {
+  const parent = expr.getParent()
+  if (!parent) return undefined
+  const prop = Node.isArrayLiteralExpression(parent) ? parent.getParent() : parent
+  if (!prop || !Node.isPropertyAssignment(prop)) return undefined
+  const nameNode = prop.getNameNode()
+  if (Node.isIdentifier(nameNode) || Node.isNumericLiteral(nameNode)) return nameNode.getText()
+  if (Node.isStringLiteral(nameNode) || Node.isNoSubstitutionTemplateLiteral(nameNode)) {
+    return nameNode.getLiteralText()
+  }
+  if (Node.isComputedPropertyName(nameNode)) {
+    const inner = nameNode.getExpression()
+    return Node.isStringLiteral(inner) ? inner.getLiteralText() : undefined
+  }
+  return undefined
 }
 
 function makeLoc(state: WalkState, offset: number): SourceLocation {

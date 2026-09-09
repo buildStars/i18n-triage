@@ -26,12 +26,12 @@ describe('scan(examples/demo)', async () => {
 
   it('classifies the demo exactly as annotated in its sources', () => {
     expect(summary.byCategory).toEqual({
-      A_UI_TEXT: 22,
+      A_UI_TEXT: 21,
       B_DEBUG_LOG: 8,
       C_DICT: 13,
-      D_INTERNAL_KEY: 10,
+      D_INTERNAL_KEY: 11,
     })
-    expect(summary.fallback).toBe(5)
+    expect(summary.fallback).toBe(3)
     expect(summary.i18nExcluded).toBe(2)
     expect(summary.classified).toBe(53)
   })

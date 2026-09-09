@@ -21,7 +21,7 @@ export interface StringNode {
   value: string
   loc: SourceLocation
   kind: StringKind
-  /** kind === 'template-attr' 时的属性名 */
+  /** kind === 'template-attr' 时的属性名；kind === 'object-value' 时为所属属性名（`{ label: 'x' }` → 'label'） */
   attrName?: string
   /** kind === 'call-arg' 时的被调用者全名，如 'showToast' / 'console.error' / 'logger.warn' */
   calleeName?: string

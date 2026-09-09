@@ -2,7 +2,7 @@ import type { Category, FileContext, Rule, StringNode, TriageResult } from '../t
 import { createUiTextRule } from './a-ui-text'
 import { createDebugLogRule } from './b-debug-log'
 import { createDictRule } from './c-dict'
-import { dInternalKeyRule } from './d-internal-key'
+import { createInternalKeyRule } from './d-internal-key'
 import type { NamedRule } from './named-rule'
 
 /** 四条默认规则的可配置项，全部可选，省略即用 defaults.ts */
@@ -12,6 +12,7 @@ export interface RulesConfig {
   debugApis?: readonly string[]
   dictDirs?: readonly string[]
   dictSiblingThreshold?: number
+  internalAttrs?: readonly string[]
 }
 
 /**
@@ -21,7 +22,10 @@ export interface RulesConfig {
 export function createDefaultRules(config: RulesConfig = {}): NamedRule[] {
   return [
     createDebugLogRule({ debugApis: config.debugApis }),
-    dInternalKeyRule,
+    createInternalKeyRule({
+      internalAttrs: config.internalAttrs,
+      exceptAttrs: config.displayAttrs,
+    }),
     createDictRule({ dictDirs: config.dictDirs, siblingThreshold: config.dictSiblingThreshold }),
     createUiTextRule({ displayAttrs: config.displayAttrs, uiApis: config.uiApis }),
   ]

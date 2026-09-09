@@ -13,7 +13,7 @@ const config = resolveConfig()
 describe('discoverFiles', () => {
   it('finds every source file under a directory, excluding node_modules and dist by default', async () => {
     const files = await discoverFiles([demo], { cwd: demo, config })
-    expect(files.map((f) => toPosixRelative(demo, f))).toEqual([
+    expect(files.map((f) => f.relativePath)).toEqual([
       'src/components/Tip.tsx',
       'src/constants/order.ts',
       'src/enums/pay.ts',
@@ -25,7 +25,7 @@ describe('discoverFiles', () => {
 
   it('returns absolute paths', async () => {
     const files = await discoverFiles([demo], { cwd: demo, config })
-    expect(files.every((f) => path.isAbsolute(f))).toBe(true)
+    expect(files.every((f) => path.isAbsolute(f.absPath))).toBe(true)
   })
 
   it('accepts explicit files and relative directories, de-duplicated and sorted', async () => {
@@ -33,7 +33,7 @@ describe('discoverFiles', () => {
       cwd: demo,
       config,
     })
-    expect(files.map((f) => toPosixRelative(demo, f))).toEqual([
+    expect(files.map((f) => f.relativePath)).toEqual([
       'src/utils/logger.ts',
       'src/utils/toast.ts',
       'src/views/Order.vue',
@@ -45,13 +45,15 @@ describe('discoverFiles', () => {
       cwd: demo,
       config: resolveConfig({ ignore: ['**/utils/**'] }),
     })
-    expect(files.some((f) => f.includes('utils'))).toBe(false)
+    expect(files.some((f) => f.relativePath.includes('utils'))).toBe(false)
     expect(files.length).toBe(4)
   })
 
   it('does not include the config file itself or non-source files', async () => {
     const files = await discoverFiles([demo], { cwd: demo, config })
-    expect(files.some((f) => f.endsWith('.mjs') || f.endsWith('.json'))).toBe(false)
+    expect(
+      files.some((f) => f.relativePath.endsWith('.mjs') || f.relativePath.endsWith('.json')),
+    ).toBe(false)
   })
 
   it('throws for a path that does not exist', async () => {

@@ -5,13 +5,41 @@ import path from 'node:path'
 import { DEFAULT_I18N_CALLEES, DEFAULT_UI_APIS } from '@i18n-triage/core'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { defineConfig, loadConfigFile, parseOnly, resolveConfig } from './config'
+import { DEFAULT_IGNORE, defineConfig, loadConfigFile, parseOnly, resolveConfig } from './config'
 
 describe('resolveConfig', () => {
   it('fills defaults when the user config is empty', () => {
     const c = resolveConfig()
     expect(c.include).toEqual(['**/*.{vue,ts,js,tsx,jsx}'])
-    expect(c.ignore).toEqual(['**/node_modules/**', '**/dist/**', '**/.git/**', '**/coverage/**'])
+    expect(c.ignore).toEqual([...DEFAULT_IGNORE])
+    // Day 7 真实项目验证：翻译表本身、mock、测试、压缩产物默认不扫
+    expect(DEFAULT_IGNORE).toEqual(
+      expect.arrayContaining([
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/.git/**',
+        '**/coverage/**',
+        '**/locales/**',
+        '**/locale/**',
+        '**/lang/**',
+        '**/langs/**',
+        '**/i18n/**',
+        '**/translations/**',
+        '**/translate/**',
+        '**/zh-CN.*',
+        '**/zh_CN.*',
+        '**/zh.*',
+        '**/mock/**',
+        '**/mocks/**',
+        '**/__mocks__/**',
+        '**/__tests__/**',
+        '**/*.test.*',
+        '**/*.spec.*',
+        '**/*.min.js',
+        '**/*.umd.js',
+        '**/*.d.ts',
+      ]),
+    )
     expect(c.only).toEqual(['A_UI_TEXT', 'C_DICT'])
     expect(c.format).toBe('text')
     expect(c.rulesConfig).toEqual({})

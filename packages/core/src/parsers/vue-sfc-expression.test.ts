@@ -53,9 +53,9 @@ describe('parseVueTemplate — 模板表达式走 script 解析器，带 kind �
   <div :style="{ content: '中文内容' }" :class="{ '中文类名': active }" v-bind="{ title: '对象绑定' }" />
 </template>`
     expect(pick(parseVueTemplate(src, ctx))).toEqual([
-      { value: '中文内容', kind: 'object-value', siblingChineseCount: 1 },
+      { value: '中文内容', kind: 'object-value', attrName: 'content', siblingChineseCount: 1 },
       { value: '中文类名', kind: 'object-key' },
-      { value: '对象绑定', kind: 'object-value', siblingChineseCount: 1 },
+      { value: '对象绑定', kind: 'object-value', attrName: 'title', siblingChineseCount: 1 },
     ])
   })
 

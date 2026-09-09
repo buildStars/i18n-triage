@@ -91,17 +91,17 @@ describe('parseScript — object-value', () => {
   it('reports property values and counts Chinese values in the same object', () => {
     const src = `const dict = { label: '联盟', desc: '描述', n: 1, en: 'league' }`
     expect(pick(parseScript(src, ctx))).toEqual([
-      { value: '联盟', kind: 'object-value', siblingChineseCount: 2 },
-      { value: '描述', kind: 'object-value', siblingChineseCount: 2 },
+      { value: '联盟', kind: 'object-value', attrName: 'label', siblingChineseCount: 2 },
+      { value: '描述', kind: 'object-value', attrName: 'desc', siblingChineseCount: 2 },
     ])
   })
 
   it('counts only the same level, not nested objects', () => {
     const src = `const o = { a: '一', nested: { b: '二', c: '三' } }`
     expect(pick(parseScript(src, ctx))).toEqual([
-      { value: '一', kind: 'object-value', siblingChineseCount: 1 },
-      { value: '二', kind: 'object-value', siblingChineseCount: 2 },
-      { value: '三', kind: 'object-value', siblingChineseCount: 2 },
+      { value: '一', kind: 'object-value', attrName: 'a', siblingChineseCount: 1 },
+      { value: '二', kind: 'object-value', attrName: 'b', siblingChineseCount: 2 },
+      { value: '三', kind: 'object-value', attrName: 'c', siblingChineseCount: 2 },
     ])
   })
 
@@ -112,18 +112,18 @@ describe('parseScript — object-value', () => {
   { label: '已取消', value: 2 },
 ]`
     expect(pick(parseScript(src, ctx))).toEqual([
-      { value: '待支付', kind: 'object-value', siblingChineseCount: 3 },
-      { value: '已支付', kind: 'object-value', siblingChineseCount: 3 },
-      { value: '已取消', kind: 'object-value', siblingChineseCount: 3 },
+      { value: '待支付', kind: 'object-value', attrName: 'label', siblingChineseCount: 3 },
+      { value: '已支付', kind: 'object-value', attrName: 'label', siblingChineseCount: 3 },
+      { value: '已取消', kind: 'object-value', attrName: 'label', siblingChineseCount: 3 },
     ])
   })
 
   it('treats string elements of an array property as object-value and counts them', () => {
     const src = `const o = { tags: ['标签一', '标签二'], name: '名' }`
     expect(pick(parseScript(src, ctx))).toEqual([
-      { value: '标签一', kind: 'object-value', siblingChineseCount: 3 },
-      { value: '标签二', kind: 'object-value', siblingChineseCount: 3 },
-      { value: '名', kind: 'object-value', siblingChineseCount: 3 },
+      { value: '标签一', kind: 'object-value', attrName: 'tags', siblingChineseCount: 3 },
+      { value: '标签二', kind: 'object-value', attrName: 'tags', siblingChineseCount: 3 },
+      { value: '名', kind: 'object-value', attrName: 'name', siblingChineseCount: 3 },
     ])
   })
 
@@ -131,17 +131,25 @@ describe('parseScript — object-value', () => {
     const src = `showToast({ message: '对象参数', duration: 1 })
 ElMessageBox.confirm({ title: '标题', buttons: { ok: '确定' } })`
     expect(pick(parseScript(src, ctx))).toEqual([
-      { value: '对象参数', kind: 'object-value', calleeName: 'showToast', siblingChineseCount: 1 },
+      {
+        value: '对象参数',
+        kind: 'object-value',
+        calleeName: 'showToast',
+        attrName: 'message',
+        siblingChineseCount: 1,
+      },
       {
         value: '标题',
         kind: 'object-value',
         calleeName: 'ElMessageBox.confirm',
+        attrName: 'title',
         siblingChineseCount: 1,
       },
       {
         value: '确定',
         kind: 'object-value',
         calleeName: 'ElMessageBox.confirm',
+        attrName: 'ok',
         siblingChineseCount: 1,
       },
     ])
@@ -149,8 +157,8 @@ ElMessageBox.confirm({ title: '标题', buttons: { ok: '确定' } })`
 
   it('reports template literal chunks used as property values', () => {
     expect(pick(parseScript('const o = { label: `第${n}期` }', ctx))).toEqual([
-      { value: '第', kind: 'object-value', siblingChineseCount: 1 },
-      { value: '期', kind: 'object-value', siblingChineseCount: 1 },
+      { value: '第', kind: 'object-value', attrName: 'label', siblingChineseCount: 1 },
+      { value: '期', kind: 'object-value', attrName: 'label', siblingChineseCount: 1 },
     ])
   })
 })
@@ -167,7 +175,7 @@ describe('parseScript — object-key', () => {
   it('tells a Chinese key from a Chinese value in the same property', () => {
     expect(pick(parseScript(`const m = { '键': '值' }`, ctx))).toEqual([
       { value: '键', kind: 'object-key' },
-      { value: '值', kind: 'object-value', siblingChineseCount: 1 },
+      { value: '值', kind: 'object-value', attrName: '键', siblingChineseCount: 1 },
     ])
   })
 

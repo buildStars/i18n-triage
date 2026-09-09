@@ -1,6 +1,6 @@
 import type { Category, StringKind, TriageResult } from '@i18n-triage/core'
 
-import type { ReportError, ScanReport, ScanSummary } from './report-model'
+import type { ReportError, ScanReport, ScanSummary, SkippedFile } from './report-model'
 
 export interface JsonReporterOptions {
   /** 只输出这些类别的结果；摘要始终是完整的。默认全部 */
@@ -29,6 +29,7 @@ export interface JsonReport {
   summary: ScanSummary
   results: JsonResult[]
   errors: ReportError[]
+  skipped: SkippedFile[]
 }
 
 export const JSON_SCHEMA_VERSION = 1 as const
@@ -58,6 +59,7 @@ export function toJsonReport(report: ScanReport, options: JsonReporterOptions = 
     summary: report.summary,
     results: report.results.filter((r) => only === undefined || only.has(r.category)).map(flatten),
     errors: report.errors,
+    skipped: report.skipped,
   }
 }
 
