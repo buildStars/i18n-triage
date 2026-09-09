@@ -130,6 +130,36 @@ src/views/system/sms/channel/index.vue:49               template-text           
 - **`{ name: '中文' }`**（vben 105、yudao 606 条待确认）：`name` 既可能是图表系列名（展示）也可能是内部标识，故意不进展示属性列表。
 - **项目自定义的提示函数**（yudao `tipText()`、`requiredRule()`，RuoYi `proxy.$tab.openPage()`）：通过配置 `uiApis` 追加即可，工具不猜。
 
+## `--fix` 实测（2026-09-09）
+
+在 RuoYi-Vue3 的副本上跑 `i18n-triage . --fix`（默认配置：`keyStyle: 'text'`、不含待确认、不改普通脚本）：
+
+| 指标                  | 数值                                                                                  |
+| --------------------- | ------------------------------------------------------------------------------------- |
+| 改写文件              | 74                                                                                    |
+| 替换文案              | 2,361                                                                                 |
+| 新增 key              | 1,734（其中 176 个因含 vue-i18n 特殊字符 / 过长退回 `k_` hash）                       |
+| 跳过                  | 330：待确认 167、拼接 60、`.js` 工具文件里的 90（`no-t-in-scope`）、模板字符串片段 13 |
+| 改写后 Vue 编译器检查 | 97 个 `.vue`，0 个错误（改写前同为 0）                                                |
+| 改写后重扫            | A 2,691 → 330，恰好等于跳过数；第二次 `--fix` 零改动                                  |
+
+vue-vben-admin 的 dry-run：将改写 211 个文件、2,137 处、999 个 key；跳过 377（待确认 336、模板字符串 35、`no-t-in-scope` 6）。
+
+改写样例（`src/views/system/user/index.vue`）：
+
+```diff
+-<el-form-item label="用户名称" prop="userName">
+-  <el-input v-model="queryParams.userName" placeholder="请输入用户名称" clearable />
++<el-form-item :label="$t('用户名称')" prop="userName">
++  <el-input v-model="queryParams.userName" :placeholder="$t('请输入用户名称')" clearable />
+-<el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
++<el-button type="primary" icon="Search" @click="handleQuery">{{ $t('搜索') }}</el-button>
+-<el-date-picker start-placeholder="开始日期" end-placeholder="结束日期" />
++<el-date-picker :start-placeholder="$t('开始日期')" :end-placeholder="$t('结束日期')" />
+```
+
+`<script setup>` 里在最后一个 import 之后补了 `import { useI18n } from 'vue-i18n'` 与 `const { t } = useI18n()`。RuoYi 本身没装 vue-i18n，这是用户接下来要做的接入工作；工具只负责把文案换成调用并产出语言包。
+
 ## 复现
 
 ```bash
